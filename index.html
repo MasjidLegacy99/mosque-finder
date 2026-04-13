@@ -313,6 +313,11 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(13,17,23,0.85); b
   <div id="detail-content"></div>
 </div>
 
+<!-- INSTITUTE DETAIL -->
+<div class="page" id="page-institute">
+  <div id="institute-content"></div>
+</div>
+
 <!-- SERVICES -->
 <div class="page" id="page-services">
   <div style="padding:32px 32px 0">
@@ -547,26 +552,39 @@ function filterServices() {
   var hasFilter = !!q || activeServiceType !== 'All';
   var base = (!hasFilter && nearestMosques20) ? nearestMosques20 : MOSQUES;
   var results = [];
+
+  // Mosque services
   base.forEach(function(m) {
     var mi = MOSQUES.indexOf(m);
     if (!m.services) return;
     m.services.forEach(function(s) {
       if ((activeServiceType === 'All' || s.type === activeServiceType) &&
           (s.name.toLowerCase().indexOf(q) > -1 || m.name.toLowerCase().indexOf(q) > -1)) {
-        results.push({service: s, mosque: m, mosqueIdx: mi});
+        results.push({service: s, mosque: m, mosqueIdx: mi, isInstitute: false});
       }
     });
   });
-  // If no nearby services, fall back to all
   if (!results.length && !hasFilter) {
     MOSQUES.forEach(function(m) {
       var mi = MOSQUES.indexOf(m);
       if (!m.services) return;
       m.services.forEach(function(s) {
-        results.push({service: s, mosque: m, mosqueIdx: mi});
+        results.push({service: s, mosque: m, mosqueIdx: mi, isInstitute: false});
       });
     });
   }
+
+  // Institute services merged in
+  INSTITUTES.forEach(function(inst, ii) {
+    if (!inst.services) return;
+    inst.services.forEach(function(s) {
+      if ((activeServiceType === 'All' || s.type === activeServiceType) &&
+          (s.name.toLowerCase().indexOf(q) > -1 || inst.name.toLowerCase().indexOf(q) > -1 || inst.area.toLowerCase().indexOf(q) > -1)) {
+        results.push({service: s, mosque: {name: inst.name, area: inst.area}, mosqueIdx: ii, isInstitute: true});
+      }
+    });
+  });
+
   renderServices(results);
 }
 
@@ -574,9 +592,33 @@ function renderServices(results) {
   var el = document.getElementById('service-results');
   if (!el) return;
   if (!results.length) { el.innerHTML = '<div class="loading-state">No services found</div>'; return; }
-  el.innerHTML = results.map(function(r) {
+
+  var SPONSORED_SVC = {
+    name: 'East London Mosque - Weekend Maktab',
+    provider: 'East London Mosque',
+    desc: 'Full-time Islamic education for children ages 5-16. Quran, Arabic and Islamic Studies every Saturday.',
+    mosqueIdx: (function(){ for(var i=0;i<MOSQUES.length;i++){ if(MOSQUES[i].name==='East London Mosque') return i; } return 0; })(),
+    active: true
+  };
+
+  var sponsoredHtml = SPONSORED_SVC.active ? (
+    '<div style="background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="openDetail(' + SPONSORED_SVC.mosqueIdx + ')">' +
+      '<div style="position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:4px">' +
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="#f0a500"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+        '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.5px">SPONSORED</span>' +
+      '</div>' +
+      '<div style="padding-right:90px">' +
+        '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + SPONSORED_SVC.name + '</div>' +
+        '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + SPONSORED_SVC.provider + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + SPONSORED_SVC.desc + '</div>' +
+      '</div>' +
+    '</div>'
+  ) : '';
+
+  el.innerHTML = sponsoredHtml + results.map(function(r) {
     var s = r.service, m = r.mosque, c = svcColor(s.type);
-    return '<div class="service-card" onclick="openDetail(' + r.mosqueIdx + ')">' +
+    var clickHandler = r.isInstitute ? 'openInstitute(' + r.mosqueIdx + ')' : 'openDetail(' + r.mosqueIdx + ')';
+    return '<div class="service-card" onclick="' + clickHandler + '">' +
       '<div class="service-icon" style="background:' + c.bg + '">' +
         '<svg viewBox="0 0 24 24" fill="' + c.color + '">' + svcIcon(s.type) + '</svg>' +
       '</div>' +
@@ -1356,7 +1398,31 @@ function renderCourses(courses) {
   var el = document.getElementById('online-results');
   if (!el) return;
   if (!courses.length) { el.innerHTML = '<div class="loading-state">No courses found</div>'; return; }
-  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' + courses.map(function(c) {
+
+  // Sponsored slot ' replace with real sponsor data when sold
+  var SPONSORED = {
+    name: 'The Divine Speech - Tafsir of the Quran',
+    provider: 'Bayyinah Institute',
+    desc: 'Ustadh Nouman Ali Khan\'s flagship course. Deep linguistic and thematic study of the Quran for all levels.',
+    url: 'https://www.bayyinah.tv',
+    active: true
+  };
+
+  var sponsoredHtml = SPONSORED.active ? (
+    '<div style="background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="window.open(\'' + SPONSORED.url + '\',\'_blank\')">' +
+      '<div style="position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:4px">' +
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="#f0a500"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+        '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.5px">SPONSORED</span>' +
+      '</div>' +
+      '<div style="padding-right:90px">' +
+        '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + SPONSORED.name + '</div>' +
+        '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + SPONSORED.provider + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + SPONSORED.desc + '</div>' +
+      '</div>' +
+    '</div>'
+  ) : '';
+
+  el.innerHTML = sponsoredHtml + '<div style="display:flex;flex-direction:column;gap:8px">' + courses.map(function(c) {
     return '<div class="mosque-card" style="padding:14px 16px;cursor:pointer;display:block;position:relative" onclick="window.open(\'' + c.url + '\',\'_blank\')">' +
       '<div style="position:absolute;top:10px;right:12px">' +
         '<span class="area-badge">' + c.provider + '</span>' +
@@ -1367,6 +1433,181 @@ function renderCourses(courses) {
       '</div>' +
     '</div>';
   }).join('') + '</div>';
+}
+
+var INSTITUTES = [
+  {
+    name: 'London Islamic School',
+    address: '14 Damien St, Whitechapel, London E1 2HX',
+    area: 'Whitechapel',
+    phone: '020 7247 0096',
+    website: 'https://londonislamicschool.co.uk',
+    type: 'School',
+    about: 'A full-time Islamic school providing high-quality education rooted in Islamic values for pupils aged 5-16.',
+    services: [
+      { name: 'Full-time Islamic School', type: 'Education', days: 'Mon-Fri', time: '8:30 AM' },
+      { name: 'Quran Hifz Programme', type: 'Education', days: 'Daily', time: '' },
+      { name: 'After-school Maktab', type: 'Education', days: 'Mon-Fri', time: '4:00 PM' }
+    ]
+  },
+  {
+    name: 'East London Madrasa',
+    address: '60 Bigland St, Whitechapel, London E1 2ND',
+    area: 'Whitechapel',
+    phone: '020 7702 0022',
+    website: '',
+    type: 'Madrasa',
+    about: 'Traditional Islamic education for children and adults including Quran recitation, Arabic and Islamic studies.',
+    services: [
+      { name: 'Quran Classes', type: 'Education', days: 'Mon-Fri', time: '5:00 PM' },
+      { name: 'Arabic Language', type: 'Education', days: 'Sat-Sun', time: '10:00 AM' },
+      { name: 'Adult Islamic Studies', type: 'Education', days: 'Sat', time: '2:00 PM' }
+    ]
+  },
+  {
+    name: 'Stepney Islamic Centre',
+    address: '95 Stepney Green, London E1 3JX',
+    area: 'Stepney',
+    phone: '',
+    website: '',
+    type: 'Community Centre',
+    about: 'A community hub offering Islamic education, youth programmes and welfare services for the local Muslim community.',
+    services: [
+      { name: 'Youth Quran Club', type: 'Youth', days: 'Sat', time: '10:00 AM' },
+      { name: 'Sisters Arabic Circle', type: 'Education', days: 'Sun', time: '11:00 AM' },
+      { name: 'Food Bank', type: 'Welfare', days: 'Fri', time: '12:00 PM' }
+    ]
+  },
+  {
+    name: 'Ilford Islamic Centre',
+    address: '14 Coventry Rd, Ilford IG1 4QR',
+    area: 'Ilford',
+    phone: '020 8478 0123',
+    website: '',
+    type: 'Islamic Centre',
+    about: 'Serving the Redbridge Muslim community with education, welfare and community programmes.',
+    services: [
+      { name: 'Weekend Maktab', type: 'Education', days: 'Sat-Sun', time: '9:00 AM' },
+      { name: 'Hifz Programme', type: 'Education', days: 'Mon-Fri', time: '4:30 PM' },
+      { name: 'Youth Sports', type: 'Youth', days: 'Sun', time: '2:00 PM' }
+    ]
+  },
+  {
+    name: 'Forest Gate Islamic Academy',
+    address: '83 Romford Rd, Forest Gate, London E7 9HA',
+    area: 'Forest Gate',
+    phone: '',
+    website: '',
+    type: 'Academy',
+    about: 'Specialist Islamic academy focusing on Quran memorisation and classical Islamic sciences.',
+    services: [
+      { name: 'Quran Memorisation', type: 'Education', days: 'Mon-Fri', time: '4:00 PM' },
+      { name: 'Islamic Sciences', type: 'Education', days: 'Sat', time: '9:00 AM' },
+      { name: 'Sisters Halaqah', type: 'Community', days: 'Sun', time: '3:00 PM' }
+    ]
+  }
+];
+
+var activeInstType = 'All';
+
+function instTypeColor(type) {
+  var map = {
+    'School':          { bg:'rgba(99,102,241,0.15)',  color:'#818cf8' },
+    'Madrasa':         { bg:'rgba(245,158,11,0.15)',  color:'#fbbf24' },
+    'Islamic Centre':  { bg:'rgba(16,185,129,0.15)',  color:'#34d399' },
+    'Community Centre':{ bg:'rgba(236,72,153,0.15)',  color:'#f472b6' },
+    'Academy':         { bg:'rgba(239,68,68,0.15)',   color:'#f87171' }
+  };
+  return map[type] || { bg:'rgba(240,165,0,0.15)', color:'#f0a500' };
+}
+
+function initInstFilters() {
+  // Institute filter pills in services page
+  var types = ['All','School','Madrasa','Islamic Centre','Community Centre','Academy'];
+  // We surface institutes in the services tab ' no separate filter needed beyond search
+}
+
+function filterInstitutes(q) {
+  q = (q || '').toLowerCase();
+  return INSTITUTES.filter(function(inst) {
+    return !q || inst.name.toLowerCase().indexOf(q) > -1 || inst.area.toLowerCase().indexOf(q) > -1 || inst.type.toLowerCase().indexOf(q) > -1;
+  });
+}
+
+function openInstitute(idx) {
+  var inst = INSTITUTES[idx];
+  if (!inst) return;
+  var c = instTypeColor(inst.type);
+  var svcRows = (inst.services || []).map(function(s) {
+    var sc = svcColor(s.type);
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)">' +
+      '<div style="width:36px;height:36px;border-radius:10px;background:' + sc.bg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        '<svg viewBox="0 0 24 24" fill="' + sc.color + '" width="18" height="18">' + svcIcon(s.type) + '</svg>' +
+      '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:14px;font-weight:600">' + s.name + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">' + (s.days || '') + (s.time ? ' - ' + s.time : '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var html =
+    '<div style="background:var(--card2);padding:20px 20px 0;position:relative">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
+        '<button style="background:rgba(255,255,255,0.07);border:none;color:var(--text);width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="showPage(\'services\')">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>' +
+        '</button>' +
+        '<a href="https://maps.google.com/?q=' + encodeURIComponent(inst.name + ' ' + inst.address) + '" onclick="event.preventDefault();event.stopPropagation();window.open(\'https://maps.google.com/?q=' + encodeURIComponent(inst.name + ' ' + inst.address) + '\',\'_blank\')" style="background:rgba(240,165,0,0.12);border:1px solid rgba(240,165,0,0.25);color:var(--gold);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>' +
+        '</a>' +
+      '</div>' +
+      '<div style="padding-bottom:20px">' +
+        '<span style="font-size:10px;font-weight:600;color:' + c.color + ';background:' + c.bg + ';padding:2px 8px;border-radius:5px;margin-bottom:8px;display:inline-block">' + inst.type + '</span>' +
+        '<h2 style="font-size:22px;font-weight:700;margin-bottom:4px">' + inst.name + '</h2>' +
+        '<p style="font-size:13px;color:var(--muted)">' + inst.address + '</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="detail-body">' +
+      '<div class="detail-card">' +
+        '<h3>About</h3>' +
+        '<p style="font-size:14px;color:var(--muted);line-height:1.6">' + inst.about + '</p>' +
+      '</div>' +
+      (svcRows ? '<div class="detail-card"><h3>Services</h3>' + svcRows + '</div>' : '') +
+      '<div class="detail-card">' +
+        '<h3>Contact</h3>' +
+        (inst.phone ? '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div>' + inst.phone + '</div>' : '') +
+        (inst.website ? '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div><a href="' + inst.website + '" target="_blank" style="color:var(--gold)">' + inst.website.replace('https://','') + '</a></div>' : '') +
+        '<button class="directions-btn" onclick="window.open(\'https://maps.google.com/?q=' + encodeURIComponent(inst.name + ' ' + inst.address) + '\',\'_blank\')">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>' +
+          'Get Directions' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('institute-content').innerHTML = html;
+  showPage('institute');
+  window.scrollTo(0, 0);
+
+  // Swipe right to go back
+  var instPage = document.getElementById('page-institute');
+  var swipeX = 0, swipeY = 0;
+  instPage.addEventListener('touchstart', function(e){ swipeX = e.touches[0].clientX; swipeY = e.touches[0].clientY; }, {passive:true});
+  instPage.addEventListener('touchend', function(e){
+    if (e.changedTouches[0].clientX - swipeX > 60 && Math.abs(e.changedTouches[0].clientY - swipeY) < 80) showPage('services');
+  }, {passive:true});
+}
+
+function instCardHTML(inst, idx) {
+  var c = instTypeColor(inst.type);
+  return '<div class="mosque-card" onclick="openInstitute(' + idx + ')" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 16px;position:relative">' +
+    '<div style="position:absolute;top:10px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+      '<span style="font-size:10px;font-weight:600;color:' + c.color + ';background:' + c.bg + ';padding:2px 7px;border-radius:5px">' + inst.type + '</span>' +
+    '</div>' +
+    '<div style="flex:1;min-width:0;padding-right:80px">' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + inst.name + '</div>' +
+      '<div style="font-size:11px;color:var(--muted)">' + inst.area + (inst.services && inst.services.length ? ' &bull; ' + inst.services.length + ' service' + (inst.services.length !== 1 ? 's' : '') : '') + '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 initHomeLocation();
