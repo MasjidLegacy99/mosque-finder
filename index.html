@@ -541,16 +541,29 @@ function setServiceType(type) {
 function filterServices() {
   var input = document.getElementById('service-search');
   var q = input ? input.value.toLowerCase() : '';
+  var hasFilter = !!q || activeServiceType !== 'All';
+  var base = (!hasFilter && nearestMosques20) ? nearestMosques20 : MOSQUES;
   var results = [];
-  MOSQUES.forEach(function(m, mi) {
+  base.forEach(function(m) {
+    var mi = MOSQUES.indexOf(m);
     if (!m.services) return;
-    m.services.forEach(function(s, si) {
+    m.services.forEach(function(s) {
       if ((activeServiceType === 'All' || s.type === activeServiceType) &&
           (s.name.toLowerCase().indexOf(q) > -1 || m.name.toLowerCase().indexOf(q) > -1)) {
         results.push({service: s, mosque: m, mosqueIdx: mi});
       }
     });
   });
+  // If no nearby services, fall back to all
+  if (!results.length && !hasFilter) {
+    MOSQUES.forEach(function(m) {
+      var mi = MOSQUES.indexOf(m);
+      if (!m.services) return;
+      m.services.forEach(function(s) {
+        results.push({service: s, mosque: m, mosqueIdx: mi});
+      });
+    });
+  }
   renderServices(results);
 }
 
@@ -578,6 +591,9 @@ function renderServices(results) {
   }).join('');
 }
 
+
+// Global nearest mosques set by location detection
+var nearestMosques20 = null;
 
 function showPage(id) {
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
@@ -615,8 +631,9 @@ function filterJummah() {
   var input = document.getElementById('jummah-search');
   var q = input ? input.value.toLowerCase() : '';
   var area = document.getElementById('jummah-area-select') ? document.getElementById('jummah-area-select').value : '';
-  var filtered = MOSQUES.filter(function(m) {
-    // area could be a borough name or a sub-area
+  var hasFilter = q || area;
+  var base = (!hasFilter && nearestMosques20) ? nearestMosques20 : MOSQUES;
+  var filtered = base.filter(function(m) {
     var areaMatch = !area || m.area === area || (BOROUGH_AREAS[area] && BOROUGH_AREAS[area].indexOf(m.area) > -1);
     var textMatch = !q || m.name.toLowerCase().indexOf(q) > -1 || m.area.toLowerCase().indexOf(q) > -1 || m.jummah.indexOf(q) > -1;
     return areaMatch && textMatch;
@@ -718,17 +735,19 @@ function filterMosques() {
   var q = input ? input.value.toLowerCase() : '';
   var city = document.getElementById('city-select') ? document.getElementById('city-select').value : '';
   var area = document.getElementById('area-select') ? document.getElementById('area-select').value : '';
-  var allAreas = Object.values(BOROUGH_AREAS).reduce(function(a,b){return a.concat(b);}, []);
-  var filtered = MOSQUES.filter(function(m) {
-    var cityMatch = !city; // London = all
+  var hasFilter = q || city || area;
+  var base = (!hasFilter && nearestMosques20) ? nearestMosques20 : MOSQUES;
+  var filtered = base.filter(function(m) {
+    var cityMatch = !city;
     var areaMatch = !area || m.area === area;
-    // If area is a borough name, match all sub-areas
     if (area && BOROUGH_AREAS[area]) {
       areaMatch = BOROUGH_AREAS[area].indexOf(m.area) > -1;
     }
     var textMatch = !q || m.name.toLowerCase().indexOf(q) > -1 || (m.address||'').toLowerCase().indexOf(q) > -1;
     return cityMatch && areaMatch && textMatch;
   });
+  var countEl = document.getElementById('mosque-count');
+  if (countEl) countEl.textContent = filtered.length + ' mosque' + (filtered.length !== 1 ? 's' : '') + (!hasFilter && nearestMosques20 ? ' nearest to you' : ' found');
   renderList(filtered);
 }
 
@@ -890,6 +909,7 @@ function initHomeLocation() {
     scored.sort(function(a,b){ return a.d - b.d; });
     var nearest = scored.slice(0, 5).map(function(s){ return s.m; });
     var nearest20 = scored.slice(0, 20).map(function(s){ return s.m; });
+    nearestMosques20 = nearest20;
     var nearestArea = nearest[0] ? nearest[0].area : 'your area';
     // Home tab
     renderHomeGrid(nearest, 'Nearest to you \u2022 ' + nearestArea);
@@ -901,6 +921,7 @@ function initHomeLocation() {
     // Jummah tab
     renderJummah(nearest20);
   }, function() {
+    nearestMosques20 = null;
     renderHomeGrid(null, '');
     renderHomeServices(null);
   }, { timeout: 5000 });
