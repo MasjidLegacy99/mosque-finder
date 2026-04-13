@@ -578,7 +578,6 @@ function renderServices(results) {
   if (!results.length) { el.innerHTML = '<div class="loading-state">No services found</div>'; return; }
   el.innerHTML = results.map(function(r) {
     var s = r.service, m = r.mosque, c = svcColor(s.type);
-    var dist = distLabel(m);
     return '<div class="service-card" onclick="openDetail(' + r.mosqueIdx + ')">' +
       '<div class="service-icon" style="background:' + c.bg + '">' +
         '<svg viewBox="0 0 24 24" fill="' + c.color + '">' + svcIcon(s.type) + '</svg>' +
@@ -586,7 +585,6 @@ function renderServices(results) {
       '<div style="position:absolute;top:10px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
         '<span style="font-size:10px;font-weight:600;color:' + c.color + ';background:' + c.bg + ';padding:2px 7px;border-radius:5px">' + s.type + '</span>' +
         (s.days || s.time ? '<span style="font-size:10px;color:var(--muted);text-align:right">' + (s.days || '') + (s.time ? (s.days ? ' ' : '') + s.time : '') + '</span>' : '') +
-        (dist ? '<span style="font-size:10px;color:var(--muted)">' + dist + '</span>' : '') +
       '</div>' +
       '<div class="service-body" style="padding-right:64px">' +
         '<div class="service-name">' + s.name + '</div>' +
@@ -804,10 +802,8 @@ function distLabel(m) {
 function cardHTML(m, i) {
   var hasSvc = m.services && m.services.length;
   var next = getNextJamaah();
-  var dist = distLabel(m);
   return '<div class="mosque-card" onclick="openDetail(' + i + ')" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 16px;position:relative">' +
-    (dist ? '<span style="position:absolute;top:10px;right:12px;font-size:10px;color:var(--muted)">' + dist + '</span>' : '') +
-    '<div style="flex:1;min-width:0;padding-right:' + (dist ? '48px' : '16px') + '">' +
+    '<div style="flex:1;min-width:0;padding-right:16px">' +
       '<div style="font-size:14px;font-weight:600;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + m.name + '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
         '<span style="font-size:11px;color:var(--gold)">' + next.name + ' ' + next.time + '</span>' +
@@ -842,10 +838,10 @@ function renderList(mosques) {
   if (!mosques.length) { el.innerHTML = '<div class="loading-state">No mosques found</div>'; return; }
   if (currentView === 'grid') {
     el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
-      mosques.map(function(m,i){ return cardHTML(m,i); }).join('') + '</div>';
+      mosques.map(function(m){ return cardHTML(m, MOSQUES.indexOf(m)); }).join('') + '</div>';
   } else {
     el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
-      mosques.map(function(m,i){ return listCardHTML(m,i); }).join('') + '</div>';
+      mosques.map(function(m){ return listCardHTML(m, MOSQUES.indexOf(m)); }).join('') + '</div>';
   }
 }
 
@@ -904,7 +900,7 @@ function renderHomeGrid(mosques, label) {
   if (!el) return;
   var list = mosques || MOSQUES.slice(0, 5);
   el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
-    list.map(function(m,i){ return cardHTML(m, MOSQUES.indexOf(m) > -1 ? MOSQUES.indexOf(m) : i); }).join('') + '</div>';
+    list.map(function(m){ return cardHTML(m, MOSQUES.indexOf(m)); }).join('') + '</div>';
   var lbl = document.getElementById('home-location-label');
   if (lbl) { lbl.textContent = label || ''; lbl.style.display = label ? 'block' : 'none'; }
 }
@@ -938,7 +934,6 @@ function renderHomeServices(nearestMosques) {
   el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' +
     results.map(function(r) {
       var s = r.service, m = r.mosque, c = svcColor(s.type);
-      var dist = distLabel(m);
       return '<div class="service-card" onclick="openDetail(' + r.mosqueIdx + ')">' +
         '<div class="service-icon" style="background:' + c.bg + '">' +
           '<svg viewBox="0 0 24 24" fill="' + c.color + '">' + svcIcon(s.type) + '</svg>' +
@@ -946,7 +941,6 @@ function renderHomeServices(nearestMosques) {
         '<div style="position:absolute;top:10px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
           '<span style="font-size:10px;font-weight:600;color:' + c.color + ';background:' + c.bg + ';padding:2px 7px;border-radius:5px">' + s.type + '</span>' +
           (s.days || s.time ? '<span style="font-size:10px;color:var(--muted);text-align:right">' + (s.days || '') + (s.time ? (s.days ? ' ' : '') + s.time : '') + '</span>' : '') +
-          (dist ? '<span style="font-size:10px;color:var(--muted)">' + dist + '</span>' : '') +
         '</div>' +
         '<div class="service-body" style="padding-right:64px">' +
           '<div class="service-name">' + s.name + '</div>' +
