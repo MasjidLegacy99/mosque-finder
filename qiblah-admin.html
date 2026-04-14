@@ -653,8 +653,16 @@ function openModal(type, data) {
       '<div id="banner-preview-wrap"><img id="banner-preview-img" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:none" onerror="this.style.display=&quot;none&quot;"></div>' +
       '<div class="form-group full"><label>Click URL <span style="font-size:11px;color:var(--muted)">(optional)</span></label><input id="f-banner-link" value="' + escapeAttr(data&&data.link_url) + '" placeholder="https://..."></div>' +
       '<div class="form-group full"><label>Alt Text</label><input id="f-banner-alt" value="' + escapeAttr(data&&data.alt_text) + '" placeholder="Description for accessibility"></div>' +
+      '<div class="form-group full" style="background:rgba(155,127,78,0.05);border:1px solid rgba(155,127,78,0.15);border-radius:10px;padding:12px 14px">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:10px">Hero Slide Fields <span style="font-size:11px;font-weight:400;color:var(--muted)">(only used when position = Hero)</span></div>' +
+        '<div class="form-grid" style="padding:0">' +
+          '<div class="form-group"><label>Label</label><input id="f-banner-label" value="' + escapeAttr(data&&data.label) + '" placeholder="e.g. Sponsored, Charity Campaign"></div>' +
+          '<div class="form-group"><label>Button Text</label><input id="f-banner-btn" value="' + escapeAttr(data&&data.button_text) + '" placeholder="e.g. Learn More"></div>' +
+          '<div class="form-group full"><label>Subtitle</label><input id="f-banner-subtitle" value="' + escapeAttr(data&&data.subtitle) + '" placeholder="Short description shown below title"></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="form-group"><label>Show On</label><select id="f-banner-position">' +
-        ['home','services','online','all'].map(function(p){ return '<option value="' + p + '"' + (data&&data.position===p?' selected':'') + '>' + p.charAt(0).toUpperCase()+p.slice(1) + '</option>'; }).join('') +
+        ['hero','home','services','online','all'].map(function(p){ return '<option value="' + p + '"' + (data&&data.position===p?' selected':'') + '>' + p.charAt(0).toUpperCase()+p.slice(1) + '</option>'; }).join('') +
       '</select></div>' +
       '<div class="form-group"><label>Status</label><select id="f-banner-active"><option value="true"' + (data&&data.active===false?'':' selected') + '>Active</option><option value="false"' + (data&&data.active===false?' selected':'') + '>Inactive</option></select></div>' +
       '<div class="form-group"><label>Start Date <span style="font-size:11px;color:var(--muted)">(optional)</span></label><input type="date" id="f-banner-start" value="' + escapeAttr(data&&data.start_date) + '"></div>' +
@@ -876,7 +884,10 @@ function saveBanner() {
     active:     document.getElementById('f-banner-active').value === 'true',
     start_date: document.getElementById('f-banner-start').value || null,
     end_date:   document.getElementById('f-banner-end').value || null,
-    sort_order: parseInt(document.getElementById('f-banner-order').value) || 0
+    sort_order: parseInt(document.getElementById('f-banner-order').value) || 0,
+    label: document.getElementById('f-banner-label') ? document.getElementById('f-banner-label').value.trim() : null,
+    subtitle: document.getElementById('f-banner-subtitle') ? document.getElementById('f-banner-subtitle').value.trim() : null,
+    button_text: document.getElementById('f-banner-btn') ? document.getElementById('f-banner-btn').value.trim() : null
   };
   if (!payload.title || !payload.image_url) { toast('Title and image URL are required', 'error'); return; }
   var method = editId ? 'PATCH' : 'POST';
