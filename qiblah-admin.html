@@ -339,15 +339,18 @@ var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6
 
 function sb(path, opts) {
   opts = opts || {};
+  var method = opts.method || 'GET';
+  var headers = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+  if (method !== 'GET') headers['Prefer'] = 'return=representation';
   return fetch(SB + '/rest/v1/' + path, Object.assign({}, opts, {
-    headers: Object.assign(
-      { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      opts.headers || {}
-    )
+    headers: Object.assign(headers, opts.headers || {})
   })).then(function(r) {
     if (!r.ok) return r.text().then(function(t){ console.error('sb error', r.status, t); return null; });
-    var ct = r.headers.get('content-type') || '';
-    return ct.indexOf('json') > -1 ? r.json() : null;
+    if (method === 'DELETE') return null;
+    return r.text().then(function(t) {
+      if (!t || !t.trim()) return null;
+      try { return JSON.parse(t); } catch(e) { console.error('sb parse error', e, t.slice(0,100)); return null; }
+    });
   });
 }
 
@@ -538,6 +541,21 @@ function renderTimetables() {
 }
 
 // MODALS
+
+function updateInstToggle(cb) {
+  var track = document.getElementById('inst-toggle-track');
+  var knob = document.getElementById('inst-toggle-knob');
+  if (track) track.style.background = cb.checked ? 'var(--gold,#9b7f4e)' : 'var(--border)';
+  if (knob) knob.style.left = cb.checked ? '18px' : '2px';
+}
+
+function escapeHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escapeAttr(s) {
+  return (s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function openModal(type, data) {
   currentModal = type;
   editId = data ? data.id : null;
@@ -548,32 +566,46 @@ function openModal(type, data) {
   if (type === 'mosque') {
     title.textContent = data ? 'Edit Mosque' : 'Add Mosque';
     body.innerHTML = '<div class="form-grid">' +
-      '<div class="form-group"><label>Mosque Name</label><input id="f-name" value="' + (data&&data.name||'') + '" placeholder="East London Mosque"></div>' +
-      '<div class="form-group"><label>Slug (Login ID)</label><input id="f-slug" value="' + (data&&data.slug||'') + '" placeholder="east-london-mosque"></div>' +
-      '<div class="form-group full"><label>Address</label><input id="f-address" value="' + (data&&data.address||'') + '" placeholder="82 Whitechapel Road, London E1 1JQ"></div>' +
-      '<div class="form-group"><label>Area</label><input id="f-area" value="' + (data&&data.area||'') + '" placeholder="Whitechapel"></div>' +
+      '<div class="form-group"><label>Mosque Name</label><input id="f-name" value="' + escapeAttr(data&&data.name) + '" placeholder="East London Mosque"></div>' +
+      '<div class="form-group"><label>Slug (Login ID)</label><input id="f-slug" value="' + escapeAttr(data&&data.slug) + '" placeholder="east-london-mosque"></div>' +
+      '<div class="form-group full"><label>Address</label><input id="f-address" value="' + escapeAttr(data&&data.address) + '" placeholder="82 Whitechapel Road, London E1 1JQ"></div>' +
+      '<div class="form-group"><label>Area</label><input id="f-area" value="' + escapeAttr(data&&data.area) + '" placeholder="Whitechapel"></div>' +
       '<div class="form-group"><label>Borough</label><select id="f-borough"><option value="">Select borough</option>' +
       ['Tower Hamlets','Newham','Redbridge'].map(function(b){ return '<option value="' + b + '"' + (data&&data.borough===b?' selected':'') + '>' + b + '</option>'; }).join('') +
       '</select></div>' +
-      '<div class="form-group full"><label>Jummah Times</label><input id="f-jummah" value="' + (data&&data.jummah||'') + '" placeholder="1:30 PM, 2:30 PM"></div>' +
-      '<div class="form-group"><label>Phone</label><input id="f-phone" value="' + (data&&data.phone||'') + '" placeholder="020 7650 3000"></div>' +
-      '<div class="form-group"><label>Website</label><input id="f-website" value="' + (data&&data.website||'') + '" placeholder="https://..."></div>' +
-      '<div class="form-group full"><label>About</label><textarea id="f-about">' + (data&&data.about||'') + '</textarea></div>' +
+      '<div class="form-group full"><label>Jummah Times</label><input id="f-jummah" value="' + escapeAttr(data&&data.jummah) + '" placeholder="1:30 PM, 2:30 PM"></div>' +
+      '<div class="form-group"><label>Phone</label><input id="f-phone" value="' + escapeAttr(data&&data.phone) + '" placeholder="020 7650 3000"></div>' +
+      '<div class="form-group"><label>Website</label><input id="f-website" value="' + escapeAttr(data&&data.website) + '" placeholder="https://..."></div>' +
+      '<div class="form-group full"><label>About</label><textarea id="f-about">' + escapeHtml(data&&data.about) + '</textarea></div>' +
     '</div>' +
     (data ? '<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Services <span style="font-size:11px;color:var(--muted);font-weight:400">(toggle sponsored to feature in app)</span></div><div id="modal-services">Loading...</div></div>' : '');
-    if (data) loadModalServices(data.id);
+    if (data) setTimeout(function(){ loadModalServices(data.id); }, 0);
   } else if (type === 'institute') {
     title.textContent = data ? 'Edit Institute' : 'Add Institute';
     body.innerHTML = '<div class="form-grid">' +
-      '<div class="form-group full"><label>Name</label><input id="f-name" value="' + (data&&data.name||'') + '"></div>' +
+      '<div class="form-group full"><label>Name</label><input id="f-name" value="' + escapeAttr(data&&data.name) + '"></div>' +
       '<div class="form-group"><label>Type</label><select id="f-type"><option>School</option><option>Madrasa</option><option>Islamic Centre</option><option>Community Centre</option><option>Academy</option></select></div>' +
-      '<div class="form-group"><label>Area</label><input id="f-area" value="' + (data&&data.area||'') + '"></div>' +
+      '<div class="form-group"><label>Area</label><input id="f-area" value="' + escapeAttr(data&&data.area) + '"></div>' +
       '<div class="form-group"><label>Borough</label><select id="f-borough"><option value="">Select</option>' +
       ['Tower Hamlets','Newham','Redbridge'].map(function(b){ return '<option value="' + b + '">' + b + '</option>'; }).join('') + '</select></div>' +
-      '<div class="form-group full"><label>Address</label><input id="f-address" value="' + (data&&data.address||'') + '"></div>' +
-      '<div class="form-group"><label>Phone</label><input id="f-phone" value="' + (data&&data.phone||'') + '"></div>' +
-      '<div class="form-group"><label>Website</label><input id="f-website" value="' + (data&&data.website||'') + '"></div>' +
-      '<div class="form-group full"><label>About</label><textarea id="f-about">' + (data&&data.about||'') + '</textarea></div>' +
+      '<div class="form-group full"><label>Address</label><input id="f-address" value="' + escapeAttr(data&&data.address) + '"></div>' +
+      '<div class="form-group"><label>Phone</label><input id="f-phone" value="' + escapeAttr(data&&data.phone) + '"></div>' +
+      '<div class="form-group"><label>Website</label><input id="f-website" value="' + escapeAttr(data&&data.website) + '"></div>' +
+      '<div class="form-group full"><label>About</label><textarea id="f-about">' + escapeHtml(data&&data.about) + '</textarea></div>' +
+      '<div class="form-group full" style="display:flex;align-items:center;gap:12px;background:rgba(155,127,78,0.05);border:1px solid rgba(155,127,78,0.2);border-radius:10px;padding:12px 14px">' +
+        '<div style="flex:1">' +
+          '<div style="font-size:13px;font-weight:600">Sponsored</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px">Shows as sponsored slot at top of Services tab</div>' +
+        '</div>' +
+        '<label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0">' +
+          '<div style="position:relative;width:36px;height:20px">' +
+            '<input type="checkbox" id="f-inst-featured"' + (data&&data.is_featured ? ' checked' : '') + ' style="opacity:0;position:absolute;width:100%;height:100%;cursor:pointer;margin:0;z-index:1" onchange="updateInstToggle(this)">' +
+            '<div id="inst-toggle-track" style="position:absolute;inset:0;border-radius:10px;background:' + (data&&data.is_featured ? 'var(--gold,#9b7f4e)' : 'var(--border)') + ';transition:background 0.2s">' +
+              '<div id="inst-toggle-knob" style="position:absolute;top:2px;left:' + (data&&data.is_featured ? '18px' : '2px') + ';width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s"></div>' +
+            '</div>' +
+          '</div>' +
+        '</label>' +
+      '</div>' +
     '</div>';
   } else if (type === 'course') {
     title.textContent = data ? 'Edit Course' : 'Add Course';
@@ -597,34 +629,56 @@ function openModal(type, data) {
 
 
 function loadModalServices(mosqueId) {
-  sb('services?mosque_id=eq.' + mosqueId + '&select=id,name,type,days,time,is_featured&order=name')
+  var url = SB + '/rest/v1/services?mosque_id=eq.' + mosqueId + '&select=id,name,type,days,time,is_featured&order=name';
+  fetch(url, { headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY } })
+    .then(function(r){ return r.json(); })
     .then(function(rows) {
+      if (!Array.isArray(rows)) rows = [];
       var el = document.getElementById('modal-services');
       if (!el) return;
       if (!rows || !rows.length) {
         el.innerHTML = '<p style="font-size:12px;color:var(--muted)">No services added yet.</p>';
         return;
       }
-      el.innerHTML = rows.map(function(s) {
-        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">' +
-          '<div>' +
-            '<div style="font-size:13px;font-weight:500">' + s.name + '</div>' +
-            '<div style="font-size:11px;color:var(--muted)">' + (s.type||'') + (s.days ? ' · ' + s.days : '') + (s.time ? ' · ' + s.time : '') + '</div>' +
+      el.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px">' + rows.map(function(s) {
+        var checked = s.is_featured ? ' checked' : '';
+        return '<div style="display:flex;align-items:center;gap:10px;background:var(--surface-2,#f8f5f0);border:1px solid var(--border);border-radius:10px;padding:10px 12px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(s.name) + '</div>' +
+            '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap">' +
+              '<span style="font-size:10px;font-weight:600;background:rgba(155,127,78,0.12);color:var(--gold,#9b7f4e);padding:2px 7px;border-radius:4px">' + escapeHtml(s.type||'') + '</span>' +
+              (s.days ? '<span style="font-size:11px;color:var(--muted)">' + escapeHtml(s.days) + '</span>' : '') +
+              (s.time ? '<span style="font-size:11px;color:var(--muted)">' + escapeHtml(s.time) + '</span>' : '') +
+            '</div>' +
           '</div>' +
-          '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;flex-shrink:0">' +
-            '<input type="checkbox" data-svc-id="' + s.id + '" class="svc-sponsored-toggle"' + (s.is_featured ? ' checked' : '') + ' style="width:14px;height:14px;accent-color:var(--gold)">' +
-            '<span style="color:var(--gold);font-weight:600">Sponsored</span>' +
+          '<label style="display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0;user-select:none">' +
+            '<span style="font-size:9px;font-weight:700;letter-spacing:0.5px;color:' + (s.is_featured ? 'var(--gold,#9b7f4e)' : 'var(--muted)') + ';text-transform:uppercase">Featured</span>' +
+            '<div style="position:relative;width:36px;height:20px">' +
+              '<input type="checkbox" data-svc-id="' + s.id + '" class="svc-sponsored-toggle" ' + checked + ' style="opacity:0;position:absolute;width:100%;height:100%;cursor:pointer;margin:0;z-index:1">' +
+              '<div class="svc-toggle-track" style="position:absolute;inset:0;border-radius:10px;background:' + (s.is_featured ? 'var(--gold,#9b7f4e)' : 'var(--border)') + ';transition:background 0.2s">' +
+                '<div style="position:absolute;top:2px;left:' + (s.is_featured ? '18px' : '2px') + ';width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s"></div>' +
+              '</div>' +
+            '</div>' +
           '</label>' +
         '</div>';
-      }).join('');
+      }).join('') + '</div>';
       // Attach change listeners
       el.querySelectorAll('.svc-sponsored-toggle').forEach(function(cb) {
         cb.addEventListener('change', function() {
           var svcId = this.dataset.svcId;
           var featured = this.checked;
-          sb('services?id=eq.' + svcId, { method: 'PATCH', body: JSON.stringify({ is_featured: featured }) })
-            .then(function() { toast(featured ? 'Service marked as sponsored' : 'Sponsorship removed', 'success'); })
-            .catch(function() { toast('Error updating service', 'error'); });
+          // Update toggle visuals
+          var track = this.nextElementSibling;
+          var knob = track ? track.firstElementChild : null;
+          var label = this.closest('label') ? this.closest('label').querySelector('span') : null;
+          if (track) track.style.background = featured ? 'var(--gold,#9b7f4e)' : 'var(--border)';
+          if (knob)  knob.style.left = featured ? '18px' : '2px';
+          if (label) { label.textContent = 'Featured'; label.style.color = featured ? 'var(--gold,#9b7f4e)' : 'var(--muted)'; }
+          // Persist to Supabase
+          var url = SB + '/rest/v1/services?id=eq.' + svcId;
+          fetch(url, { method: 'PATCH', headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ is_featured: featured }) })
+            .then(function(r) { toast(r.ok ? (featured ? 'Marked as sponsored' : 'Sponsorship removed') : 'Error saving', r.ok ? 'success' : 'error'); })
+            .catch(function() { toast('Connection error', 'error'); });
         });
       });
     });
@@ -665,6 +719,7 @@ function saveMosque() {
 function saveInstitute() {
   var payload = {
     name: document.getElementById('f-name').value.trim(),
+    is_featured: document.getElementById('f-inst-featured') ? document.getElementById('f-inst-featured').checked : false,
     type: document.getElementById('f-type').value,
     area: document.getElementById('f-area').value.trim(),
     borough: document.getElementById('f-borough').value,
