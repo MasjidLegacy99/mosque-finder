@@ -428,15 +428,19 @@ body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--t
 </div>
 
 <script>
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+var SUPABASE_URL = 'https://bfevwoykvnogmgxdkxdj.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.8I--P9h_jYsSlvkthF76O1m0mcFkgI8mcRmKVgXOHAk';
 
-var MOSQUE_DB = {
-  'east-london-mosque': { pin: '1234', name: 'East London Mosque', address: '82-92 Whitechapel Road, London E1 1JQ', area: 'Whitechapel' },
-  'dar-al-arqam': { pin: '2345', name: 'Dar al Arqam', address: '1 Kitcat Terrace, Bow, London E3 2SA', area: 'Bow' },
-  'markazi-masjid': { pin: '3456', name: 'Markazi Masjid', address: 'Christian Street, London E1 1RS', area: 'Whitechapel' },
-  'bow-central': { pin: '4567', name: 'Bow Central Mosque', address: 'Bow, London E3', area: 'Bow' },
-  'redbridge-islamic-centre': { pin: '5678', name: 'Redbridge Islamic Centre', address: '179 Eastern Avenue, Ilford, IG4 5AW', area: 'Ilford' }
-};
+function sbFetch(path, opts) {
+  return fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }
+  }, opts || {}));
+}
 
 var PRAYER_NAMES = ['Fajr', 'Zuhr', 'Asr', 'Maghrib', 'Isha'];
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -449,13 +453,26 @@ function doLogin() {
   var errEl = document.getElementById('login-error');
   errEl.style.display = 'none';
   if (!id || !pin) { showError('Please enter your Mosque ID and PIN.'); return; }
-  var mosque = MOSQUE_DB[id];
-  if (!mosque || mosque.pin !== pin) {
-    showError('Incorrect Mosque ID or PIN. Please contact admin@masajid.app for access.');
-    return;
-  }
-  currentMosque = { id: id, pin: mosque.pin, name: mosque.name, address: mosque.address, area: mosque.area };
-  loadDashboard();
+  showError('Checking...');
+  // Fetch mosque by slug
+  sbFetch('mosques?slug=eq.' + encodeURIComponent(id) + '&select=*')
+    .then(function(r){ return r.json(); })
+    .then(function(mosques) {
+      if (!mosques || !mosques.length) { showError('Mosque ID not found. Contact admin@qiblah.app'); return; }
+      var mosque = mosques[0];
+      // Check PIN against mosque_admins
+      sbFetch('mosque_admins?mosque_id=eq.' + mosque.id + '&select=pin_hash')
+        .then(function(r){ return r.json(); })
+        .then(function(admins) {
+          if (!admins || !admins.length || admins[0].pin_hash !== pin) {
+            showError('Incorrect PIN. Contact admin@qiblah.app for access.');
+            return;
+          }
+          currentMosque = { id: mosque.id, slug: mosque.slug, name: mosque.name, address: mosque.address, area: mosque.area };
+          loadDashboard();
+        });
+    })
+    .catch(function() { showError('Connection error. Please try again.'); });
 }
 
 function showError(msg) {
@@ -481,14 +498,71 @@ function loadDashboard() {
   document.getElementById('header-mosque-name').textContent = currentMosque.name;
   document.getElementById('dash-mosque-title').textContent = currentMosque.name;
   document.getElementById('dash-mosque-address').textContent = currentMosque.address;
-  var saved = localStorage.getItem('masajid-' + currentMosque.id);
-  currentData = saved ? JSON.parse(saved) : getDefaultData();
-  renderAll();
+  // Load data from Supabase
+  loadFromSupabase();
+}
+
+function loadFromSupabase() {
+  currentData = getDefaultData();
+  var mid = currentMosque.id;
+  var today = new Date().toISOString().split('T')[0];
+  // Load profile
+  sbFetch('mosques?id=eq.' + mid + '&select=*')
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      if (rows && rows[0]) {
+        var m = rows[0];
+        currentData.profile = { phone: m.phone||'', website: m.website||'', email: m.email||'', about: m.about||'', facilities: (m.tags||[]).join(', ') };
+        if (m.jummah) currentData.jummah = { times: m.jummah, lang: 'English', notes: '' };
+      }
+    });
+  // Load timetable
+  sbFetch('prayer_timetables?mosque_id=eq.' + mid + '&select=*&order=date')
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      if (rows) {
+        rows.forEach(function(row) {
+          var key = formatDateKey(new Date(row.date));
+          currentData.timetable[key] = {
+            Fajr:{begins:row.fajr_begins||'',jamaah:row.fajr_jamaah||''},
+            Sunrise:{begins:row.sunrise||'',jamaah:''},
+            Zuhr:{begins:row.zuhr_begins||'',jamaah:row.zuhr_jamaah||''},
+            Asr:{begins:row.asr_begins||'',jamaah:row.asr_jamaah||''},
+            Maghrib:{begins:row.maghrib_begins||'',jamaah:row.maghrib_jamaah||''},
+            Isha:{begins:row.isha_begins||'',jamaah:row.isha_jamaah||''}
+          };
+        });
+        // Set today's prayer times
+        if (currentData.timetable[formatDateKey(new Date())]) {
+          currentData.prayerTimes = currentData.timetable[formatDateKey(new Date())];
+        }
+      }
+    });
+  // Load services
+  sbFetch('services?mosque_id=eq.' + mid + '&select=*')
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      if (rows) currentData.services = rows.map(function(s){ return {name:s.name,type:s.type||'Community',days:s.days||'',time:s.time||'',_id:s.id}; });
+    });
+  // Load announcements
+  sbFetch('announcements?mosque_id=eq.' + mid + '&select=*&order=created_at.desc')
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      if (rows) currentData.announcements = rows.map(function(a){ return {title:a.title,desc:a.description||'',date:a.date||'',category:a.category||'General',_id:a.id}; });
+    });
+  // Render after short delay to let fetches complete
+  setTimeout(renderAll, 600);
+}
+
+function formatDateKey(d) {
+  var day = ('0'+d.getDate()).slice(-2);
+  var mon = ('0'+(d.getMonth()+1)).slice(-2);
+  return day + '/' + mon + '/' + d.getFullYear();
 }
 
 function getDefaultData() {
   return {
-    prayerTimes: { Fajr:{begins:'05:18',jamaah:'05:48'}, Zuhr:{begins:'12:15',jamaah:'12:45'}, Asr:{begins:'14:41',jamaah:'15:00'}, Maghrib:{begins:'19:32',jamaah:'19:39'}, Isha:{begins:'21:00',jamaah:'21:30'} },
+    prayerTimes: { Fajr:{begins:'05:15',jamaah:'05:45'}, Zuhr:{begins:'13:15',jamaah:'13:30'}, Asr:{begins:'17:45',jamaah:'18:00'}, Maghrib:{begins:'20:15',jamaah:'20:20'}, Isha:{begins:'21:30',jamaah:'21:45'} },
     jummah: { times: '1:30 PM', lang: 'English', notes: '' },
     timetable: {},
     profile: { phone: '', website: '', email: '', about: '', facilities: '' },
@@ -498,17 +572,49 @@ function getDefaultData() {
 }
 
 function saveData() {
-  localStorage.setItem('masajid-' + currentMosque.id, JSON.stringify(currentData));
-  postToSheet(currentData);
+  // Save profile to mosques table
+  sbFetch('mosques?id=eq.' + currentMosque.id, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      phone: currentData.profile.phone,
+      website: currentData.profile.website,
+      email: currentData.profile.email,
+      about: currentData.profile.about,
+      jummah: typeof currentData.jummah === 'string' ? currentData.jummah : (currentData.jummah && currentData.jummah.times ? currentData.jummah.times : ''),
+      updated_at: new Date().toISOString()
+    })
+  }).catch(function(){});
 }
 
-function postToSheet(data) {
-  if (APPS_SCRIPT_URL.indexOf('YOUR_SCRIPT_ID') > -1) return;
-  fetch(APPS_SCRIPT_URL, {
+function saveTimetableToSupabase(dateKey, entry) {
+  // Convert DD/MM/YYYY to YYYY-MM-DD
+  var parts = dateKey.split('/');
+  var isoDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+  var payload = {
+    mosque_id: currentMosque.id,
+    date: isoDate,
+    fajr_begins: entry.Fajr ? entry.Fajr.begins : '',
+    fajr_jamaah: entry.Fajr ? entry.Fajr.jamaah : '',
+    sunrise: entry.Sunrise ? entry.Sunrise.begins : '',
+    zuhr_begins: entry.Zuhr ? entry.Zuhr.begins : '',
+    zuhr_jamaah: entry.Zuhr ? entry.Zuhr.jamaah : '',
+    asr_begins: entry.Asr ? entry.Asr.begins : '',
+    asr_jamaah: entry.Asr ? entry.Asr.jamaah : '',
+    maghrib_begins: entry.Maghrib ? entry.Maghrib.begins : '',
+    maghrib_jamaah: entry.Maghrib ? entry.Maghrib.jamaah : '',
+    isha_begins: entry.Isha ? entry.Isha.begins : '',
+    isha_jamaah: entry.Isha ? entry.Isha.jamaah : ''
+  };
+  sbFetch('prayer_timetables', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mosqueId: currentMosque.id, data: data })
-  }).catch(function() {});
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(payload)
+  }).catch(function(){});
 }
 
 function showSaveStatus(msg, ok) {
@@ -570,7 +676,7 @@ function saveTodayTimes() {
   });
   currentData.timetable[today] = entry;
   currentData.prayerTimes = entry;
-  saveData();
+  saveTimetableToSupabase(today, entry);
   showSaveStatus('Today saved', true);
   renderYearlyOverview();
 }
@@ -581,7 +687,22 @@ function saveJummah() {
     lang: document.getElementById('jummah-lang').value.trim(),
     notes: document.getElementById('jummah-notes').value.trim()
   };
-  saveData();
+  // Update mosque jummah field in Supabase
+  sbFetch('mosques?id=eq.' + currentMosque.id, {
+    method: 'PATCH',
+    body: JSON.stringify({ jummah: currentData.jummah.times, updated_at: new Date().toISOString() })
+  }).catch(function(){});
+  // Upsert into jummah_times table
+  sbFetch('jummah_times?mosque_id=eq.' + currentMosque.id, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify({ mosque_id: currentMosque.id, times: currentData.jummah.times, language: currentData.jummah.lang, notes: currentData.jummah.notes, updated_at: new Date().toISOString() })
+  }).catch(function(){});
   showSaveStatus('Jummah saved', true);
 }
 
@@ -627,7 +748,18 @@ function saveMonthTable() {
     if(!currentData.timetable[key][p]) currentData.timetable[key][p]={};
     currentData.timetable[key][p][f]=inp.value;
   });
-  saveData(); showSaveStatus('Month saved',true); renderYearlyOverview();
+  // Save each day to Supabase
+  var keys = Object.keys(currentData.timetable);
+  var month = parseInt(document.getElementById('month-select').value);
+  var year = parseInt(document.getElementById('year-select').value);
+  keys.forEach(function(k) {
+    var parts = k.split('/');
+    if (parseInt(parts[1])-1 === month && parseInt(parts[2]) === year) {
+      saveTimetableToSupabase(k, currentData.timetable[k]);
+    }
+  });
+  showSaveStatus('Month saved', true);
+  renderYearlyOverview();
 }
 
 function copyFromPrevMonth() {
@@ -674,9 +806,53 @@ function parseAndPreviewCSV(text) {
 }
 
 function saveCSVData() {
-  if(!parsedCSV) return;
-  currentData.timetable=Object.assign(currentData.timetable||{},parsedCSV);
-  saveData(); renderYearlyOverview(); showSaveStatus(Object.keys(parsedCSV).length+' days saved',true);
+  if (!parsedCSV) return;
+  currentData.timetable = Object.assign(currentData.timetable || {}, parsedCSV);
+  var keys = Object.keys(parsedCSV);
+  var rows = keys.map(function(dateKey) {
+    var e = parsedCSV[dateKey];
+    var parts = dateKey.split('/');
+    var isoDate = parts[2] + '-' + parts[1] + '-' + parts[0];
+    return {
+      mosque_id: currentMosque.id,
+      date: isoDate,
+      fajr_begins: e.Fajr ? e.Fajr.begins : '',
+      fajr_jamaah: e.Fajr ? e.Fajr.jamaah : '',
+      sunrise: e.Sunrise ? e.Sunrise.begins : '',
+      zuhr_begins: e.Zuhr ? e.Zuhr.begins : '',
+      zuhr_jamaah: e.Zuhr ? e.Zuhr.jamaah : '',
+      asr_begins: e.Asr ? e.Asr.begins : '',
+      asr_jamaah: e.Asr ? e.Asr.jamaah : '',
+      maghrib_begins: e.Maghrib ? e.Maghrib.begins : '',
+      maghrib_jamaah: e.Maghrib ? e.Maghrib.jamaah : '',
+      isha_begins: e.Isha ? e.Isha.begins : '',
+      isha_jamaah: e.Isha ? e.Isha.jamaah : ''
+    };
+  });
+  // Batch upsert in chunks of 100
+  var chunkSize = 100;
+  var chunks = [];
+  for (var i = 0; i < rows.length; i += chunkSize) chunks.push(rows.slice(i, i + chunkSize));
+  var saved = 0;
+  showSaveStatus('Saving ' + rows.length + ' days...', false);
+  function saveChunk(idx) {
+    if (idx >= chunks.length) {
+      renderYearlyOverview();
+      showSaveStatus(rows.length + ' days saved to Supabase', true);
+      return;
+    }
+    fetch(SUPABASE_URL + '/rest/v1/prayer_timetables', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(chunks[idx])
+    }).then(function() { saveChunk(idx + 1); }).catch(function() { saveChunk(idx + 1); });
+  }
+  saveChunk(0);
 }
 
 function showCSVError(msg){var el=document.getElementById('csv-error');el.textContent=msg;el.style.display='block';}
@@ -761,25 +937,35 @@ function showAddService() {
 function addService() {
   var name = document.getElementById('new-svc-name').value.trim();
   if (!name) return;
-  currentData.services = currentData.services || [];
-  currentData.services.push({
+  var svc = {
+    mosque_id: currentMosque.id,
     name: name,
     type: document.getElementById('new-svc-type').value,
     days: document.getElementById('new-svc-days').value.trim(),
     time: document.getElementById('new-svc-time').value.trim()
-  });
-  saveData();
+  };
+  sbFetch('services', { method: 'POST', body: JSON.stringify(svc) })
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      if (rows && rows[0]) {
+        currentData.services = currentData.services || [];
+        currentData.services.push({ name: rows[0].name, type: rows[0].type, days: rows[0].days, time: rows[0].time, _id: rows[0].id });
+      }
+      renderServices();
+      showSaveStatus('Service added', true);
+    }).catch(function(){ showSaveStatus('Error saving service', false); });
   document.getElementById('add-service-form').style.display = 'none';
   document.getElementById('new-svc-name').value = '';
   document.getElementById('new-svc-days').value = '';
   document.getElementById('new-svc-time').value = '';
-  renderServices();
-  showSaveStatus('Service added', true);
 }
 
 function deleteService(i) {
+  var svc = currentData.services[i];
+  if (svc && svc._id) {
+    sbFetch('services?id=eq.' + svc._id, { method: 'DELETE' }).catch(function(){});
+  }
   currentData.services.splice(i, 1);
-  saveData();
   renderServices();
   showSaveStatus('Service removed', true);
 }
@@ -808,25 +994,35 @@ function showAddAnnouncement() {
 function addAnnouncement() {
   var title = document.getElementById('new-ann-title').value.trim();
   if (!title) return;
-  currentData.announcements = currentData.announcements || [];
-  currentData.announcements.unshift({
+  var ann = {
+    mosque_id: currentMosque.id,
     title: title,
-    desc: document.getElementById('new-ann-desc').value.trim(),
-    date: document.getElementById('new-ann-date').value,
+    description: document.getElementById('new-ann-desc').value.trim(),
+    date: document.getElementById('new-ann-date').value || null,
     category: document.getElementById('new-ann-cat').value
-  });
-  saveData();
+  };
+  sbFetch('announcements', { method: 'POST', body: JSON.stringify(ann) })
+    .then(function(r){ return r.json(); })
+    .then(function(rows) {
+      if (rows && rows[0]) {
+        currentData.announcements = currentData.announcements || [];
+        currentData.announcements.unshift({ title: rows[0].title, desc: rows[0].description||'', date: rows[0].date||'', category: rows[0].category||'General', _id: rows[0].id });
+      }
+      renderAnnouncements();
+      showSaveStatus('Announcement posted', true);
+    }).catch(function(){ showSaveStatus('Error posting announcement', false); });
   document.getElementById('add-ann-form').style.display = 'none';
   document.getElementById('new-ann-title').value = '';
   document.getElementById('new-ann-desc').value = '';
   document.getElementById('new-ann-date').value = '';
-  renderAnnouncements();
-  showSaveStatus('Announcement posted', true);
 }
 
 function deleteAnnouncement(i) {
+  var ann = currentData.announcements[i];
+  if (ann && ann._id) {
+    sbFetch('announcements?id=eq.' + ann._id, { method: 'DELETE' }).catch(function(){});
+  }
   currentData.announcements.splice(i, 1);
-  saveData();
   renderAnnouncements();
   showSaveStatus('Announcement removed', true);
 }
