@@ -6,7 +6,12 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0d1117">
-<style>html,body{background:#f5f0e8!important;margin:0!important;padding:0!important;}</style>
+<style>html,body{background:#f5f0e8!important;margin:0!important;padding:0!important;}
+.sponsored-slider { margin-bottom:14px; }
+.sponsored-track-wrap { overflow:hidden; border-radius:var(--radius); }
+.sponsored-track { display:flex; transition:transform 0.5s cubic-bezier(.4,0,.2,1); will-change:transform; }
+.sponsored-slide { min-width:100%; flex-shrink:0; }
+</style>
 <title>Qiblah</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -457,12 +462,26 @@ function renderServices(results) {
   if (!el) return;
   if (!results.length) { el.innerHTML = '<div class="loading-state">No services found</div>'; return; }
 
-  // Sponsored service - first mosque with a service marked as featured (future: add 'featured' flag)
-  // For now, no hardcoded sponsored slot - remove entirely
-  var sponsoredHtml = '';
+  var featured = results.filter(function(r){ return r.service.featured; });
+  var regular  = results.filter(function(r){ return !r.service.featured; });
 
+  var featuredHtml = '';
+  if (featured.length === 1) {
+    var r = featured[0], s = r.service, m = r.mosque, c = svcColor(s.type);
+    var clickHandler = r.isInstitute ? 'openInstitute(' + r.mosqueIdx + ')' : 'openDetail(' + r.mosqueIdx + ')';
+    featuredHtml = '<div style="margin-bottom:14px">' + buildFeaturedServiceCard(r, true) + '</div>';
+  } else if (featured.length > 1) {
+    featuredHtml = '<div class="sponsored-slider">' +
+      '<div class="sponsored-track-wrap">' +
+        '<div class="sponsored-track" id="svc-track">' +
+          featured.map(function(r){ return '<div class="sponsored-slide">' + buildFeaturedServiceCard(r, true) + '</div>'; }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+    startAutoSlide('svc', featured.length);
+  }
 
-  el.innerHTML = sponsoredHtml + results.map(function(r) {
+  el.innerHTML = featuredHtml + regular.map(function(r) {
     var s = r.service, m = r.mosque, c = svcColor(s.type);
     var clickHandler = r.isInstitute ? 'openInstitute(' + r.mosqueIdx + ')' : 'openDetail(' + r.mosqueIdx + ')';
     return '<div class="service-card" onclick="' + clickHandler + '">' +
@@ -471,7 +490,7 @@ function renderServices(results) {
       '</div>' +
       '<div style="position:absolute;top:10px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
         '<span style="font-size:10px;font-weight:600;color:' + c.color + ';background:' + c.bg + ';padding:2px 7px;border-radius:5px">' + s.type + '</span>' +
-        (s.days || s.time ? '<span style="font-size:10px;color:var(--muted);text-align:right">' + (s.days || '') + (s.time ? (s.days ? ' ' : '') + s.time : '') + '</span>' : '') +
+        (s.days || s.time ? '<span style="font-size:10px;color:var(--muted);text-align:right">' + (s.days||'') + (s.time?(s.days?' ':'')+s.time:'') + '</span>' : '') +
       '</div>' +
       '<div class="service-body" style="padding-right:64px">' +
         '<div class="service-name">' + s.name + '</div>' +
@@ -479,6 +498,25 @@ function renderServices(results) {
       '</div>' +
     '</div>';
   }).join('');
+}
+
+function buildFeaturedServiceCard(r, showBadge) {
+  var s = r.service, m = r.mosque, c = svcColor(s.type);
+  var clickHandler = r.isInstitute ? 'openInstitute(' + r.mosqueIdx + ')' : 'openDetail(' + r.mosqueIdx + ')';
+  return '<div class="service-card" style="background:rgba(155,127,78,0.05);border:1px solid rgba(155,127,78,0.25)" onclick="' + clickHandler + '">' +
+    '<div class="service-icon" style="background:' + c.bg + '">' +
+      '<svg viewBox="0 0 24 24" fill="' + c.color + '">' + svcIcon(s.type) + '</svg>' +
+    '</div>' +
+    '<div style="position:absolute;top:10px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+      (showBadge ? '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.3px">&#9733; FEATURED</span>' : '') +
+      '<span style="font-size:10px;font-weight:600;color:' + c.color + ';background:' + c.bg + ';padding:2px 7px;border-radius:5px">' + s.type + '</span>' +
+      (s.days || s.time ? '<span style="font-size:10px;color:var(--muted);text-align:right">' + (s.days||'') + (s.time?(s.days?' ':'')+s.time:'') + '</span>' : '') +
+    '</div>' +
+    '<div class="service-body" style="padding-right:80px">' +
+      '<div class="service-name">' + s.name + '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + m.name + '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 
@@ -1313,11 +1351,44 @@ function setCourseType(type) {
   filterCourses();
 }
 
+var sliderTimers = {};
+function startAutoSlide(id, count) {
+  if (count <= 1) return;
+  clearInterval(sliderTimers[id]);
+  sliderTimers[id + '_idx'] = 0;
+  sliderTimers[id] = setInterval(function() {
+    sliderTimers[id + '_idx'] = (sliderTimers[id + '_idx'] + 1) % count;
+    var track = document.getElementById(id + '-track');
+    if (track) {
+      track.style.transform = 'translateX(-' + (sliderTimers[id + '_idx'] * 100) + '%)';
+    } else {
+      clearInterval(sliderTimers[id]);
+    }
+  }, 3000);
+}
+
+function buildSponsoredCourseCard(c) {
+  return '<div style="background:rgba(155,127,78,0.06);border:1px solid rgba(155,127,78,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="window.open(\'' + c.url + '\',\'_blank\')">' +
+    '<div style="position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:4px">' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="#9b7f4e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
+      '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.5px">SPONSORED</span>' +
+    '</div>' +
+    '<div style="padding-right:90px">' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + c.name + '</div>' +
+      '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + c.provider + '</div>' +
+      '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + c.desc + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+
 function filterCourses() {
   var input = document.getElementById('online-search');
   var q = input ? input.value.toLowerCase() : '';
+  // Only the first sponsored course goes in the slot — extras stay in the main list
+  var firstSponsoredUsed = false;
   var filtered = COURSES.filter(function(c) {
-    if (c.sponsored) return false; // shown in sponsored slot
+    if (c.sponsored && !firstSponsoredUsed) { firstSponsoredUsed = true; return false; }
     var typeMatch = activeCourseType === 'All' || c.type === activeCourseType;
     var textMatch = !q || c.name.toLowerCase().indexOf(q) > -1 || c.provider.toLowerCase().indexOf(q) > -1 || c.desc.toLowerCase().indexOf(q) > -1;
     return typeMatch && textMatch;
@@ -1330,21 +1401,21 @@ function renderCourses(courses) {
   if (!el) return;
   if (!courses.length) { el.innerHTML = '<div class="loading-state">No courses found</div>'; return; }
 
-  // Sponsored course - pulled from Supabase (is_sponsored = true)
-  var sponsoredCourse = COURSES.find(function(c){ return c.sponsored; });
-  var sponsoredHtml = sponsoredCourse ? (
-    '<div style="background:rgba(155,127,78,0.06);border:1px solid rgba(155,127,78,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="window.open(\'' + sponsoredCourse.url + '\',\'_blank\')">' +
-      '<div style="position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:4px">' +
-        '<svg width="10" height="10" viewBox="0 0 24 24" fill="#9b7f4e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
-        '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.5px">SPONSORED</span>' +
+  // Sponsored courses - build slider if multiple
+  var sponsoredCourses = COURSES.filter(function(c){ return c.sponsored; });
+  var sponsoredHtml = '';
+  if (sponsoredCourses.length === 1) {
+    sponsoredHtml = buildSponsoredCourseCard(sponsoredCourses[0]);
+  } else if (sponsoredCourses.length > 1) {
+    sponsoredHtml = '<div class="sponsored-slider">' +
+      '<div class="sponsored-track-wrap">' +
+        '<div class="sponsored-track" id="course-track">' +
+          sponsoredCourses.map(function(c){ return '<div class="sponsored-slide">' + buildSponsoredCourseCard(c) + '</div>'; }).join('') +
+        '</div>' +
       '</div>' +
-      '<div style="padding-right:90px">' +
-        '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + sponsoredCourse.name + '</div>' +
-        '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + sponsoredCourse.provider + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + sponsoredCourse.desc + '</div>' +
-      '</div>' +
-    '</div>'
-  ) : '';
+    '</div>';
+    startAutoSlide('course', sponsoredCourses.length);
+  }
 
   el.innerHTML = sponsoredHtml + '<div style="display:flex;flex-direction:column;gap:8px">' + courses.map(function(c) {
     var col = courseTypeColor(c.type);
@@ -1474,10 +1545,10 @@ function loadMosquesFromSupabase() {
   document.getElementById('mosque-results').innerHTML = '<div class="loading-state">Loading mosques...</div>';
 
   var p1 = sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url,lat,lon&order=name');
-  var p2 = sbGet('services?select=mosque_id,name,type,days,time');
+  var p2 = sbGet('services?select=mosque_id,name,type,days,time,is_featured');
   var p3 = sbGet('courses?select=*&order=name&active=eq.true');
   var p4 = sbGet('institutes?select=id,name,address,area,borough,phone,website,type,about&order=name');
-  var p5 = sbGet('institute_services?select=institute_id,name,type,days,time');
+  var p5 = sbGet('institute_services?select=institute_id,name,type,days,time,is_featured');
   var today = new Date().toISOString().split('T')[0];
   var p6 = sbGet('prayer_timetables?date=eq.' + today + '&select=mosque_id,fajr_jamaah,zuhr_jamaah,asr_jamaah,maghrib_jamaah,isha_jamaah');
 
@@ -1508,14 +1579,14 @@ function loadMosquesFromSupabase() {
       var svcByMosque = {};
       svcRows.forEach(function(s) {
         if (!svcByMosque[s.mosque_id]) svcByMosque[s.mosque_id] = [];
-        svcByMosque[s.mosque_id].push({ name: s.name, type: s.type||'Community', days: s.days||'', time: s.time||'' });
+        svcByMosque[s.mosque_id].push({ name: s.name, type: s.type||'Community', days: s.days||'', time: s.time||'', featured: s.is_featured||false });
       });
 
       // Build institute_services lookup
       var svcByInst = {};
       instSvcRows.forEach(function(s) {
         if (!svcByInst[s.institute_id]) svcByInst[s.institute_id] = [];
-        svcByInst[s.institute_id].push({ name: s.name, type: s.type||'Education', days: s.days||'', time: s.time||'' });
+        svcByInst[s.institute_id].push({ name: s.name, type: s.type||'Education', days: s.days||'', time: s.time||'', featured: s.is_featured||false });
       });
 
       // Populate MOSQUES
