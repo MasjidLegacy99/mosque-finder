@@ -338,9 +338,17 @@ var SB = 'https://bfevwoykvnogmgxdkxdj.supabase.co';
 var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.8I--P9h_jYsSlvkthF76O1m0mcFkgI8mcRmKVgXOHAk';
 
 function sb(path, opts) {
-  return fetch(SB + '/rest/v1/' + path, Object.assign({
-    headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' }
-  }, opts || {})).then(function(r){ return r.json(); });
+  opts = opts || {};
+  return fetch(SB + '/rest/v1/' + path, Object.assign({}, opts, {
+    headers: Object.assign(
+      { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      opts.headers || {}
+    )
+  })).then(function(r) {
+    if (!r.ok) return r.text().then(function(t){ console.error('sb error', r.status, t); return null; });
+    var ct = r.headers.get('content-type') || '';
+    return ct.indexOf('json') > -1 ? r.json() : null;
+  });
 }
 
 var state = { mosques: [], admins: [], institutes: [], courses: [], timetables: [] };
