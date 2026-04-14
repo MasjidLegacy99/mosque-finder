@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0d1117">
 <style>html,body{background:#f5f0e8!important;margin:0!important;padding:0!important;}</style>
@@ -761,6 +763,7 @@ function renderHomePrayerCard(mosque) {
   var el = document.getElementById('home-prayer-card');
   if (!el) return;
   var m = mosque || (nearestMosques20 && nearestMosques20[0]) || MOSQUES[0];
+  if (!m) return; // not loaded yet
   var idx = MOSQUES.indexOf(m);
   var now = new Date();
   var nowMins = now.getHours() * 60 + now.getMinutes();
@@ -1162,7 +1165,7 @@ function renderDetailPage(idx, m, img, prayers) {
         '<div class="jummah-section">' +
           '<h4>Jummah</h4>' +
           '<div class="jummah-times">' +
-            m.jummah.split(',').map(function(t){ return '<span class="jummah-pill">' + t.trim() + '</span>'; }).join('') +
+            (m.jummah || '1:30 PM').split(',').map(function(t){ return '<span class="jummah-pill">' + t.trim() + '</span>'; }).join('') +
           '</div>' +
         '</div>' +
       '</div>' +
