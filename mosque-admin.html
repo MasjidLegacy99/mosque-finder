@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mosque Admin - Masajid</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -532,19 +533,20 @@ function loadFromSupabase() {
     .then(function(rows) {
       if (rows) {
         rows.forEach(function(row) {
-          var key = formatDateKey(new Date(row.date));
+          var parts = row.date.split('-');
+          var key = parts[2] + '/' + parts[1] + '/' + parts[0];
           currentData.timetable[key] = {
-            Fajr:{begins:row.fajr_begins||'',jamaah:row.fajr_jamaah||''},
-            Sunrise:{begins:row.sunrise||'',jamaah:''},
-            Zuhr:{begins:row.zuhr_begins||'',jamaah:row.zuhr_jamaah||''},
-            Asr:{begins:row.asr_begins||'',jamaah:row.asr_jamaah||''},
-            Maghrib:{begins:row.maghrib_begins||'',jamaah:row.maghrib_jamaah||''},
-            Isha:{begins:row.isha_begins||'',jamaah:row.isha_jamaah||''}
+            Fajr:    {begins:row.fajr_begins||'',   jamaah:row.fajr_jamaah||''},
+            Sunrise: {begins:row.sunrise||'',        jamaah:''},
+            Zuhr:    {begins:row.zuhr_begins||'',    jamaah:row.zuhr_jamaah||''},
+            Asr:     {begins:row.asr_begins||'',     jamaah:row.asr_jamaah||''},
+            Maghrib: {begins:row.maghrib_begins||'', jamaah:row.maghrib_jamaah||''},
+            Isha:    {begins:row.isha_begins||'',    jamaah:row.isha_jamaah||''}
           };
         });
-        // Set today's prayer times
-        if (currentData.timetable[formatDateKey(new Date())]) {
-          currentData.prayerTimes = currentData.timetable[formatDateKey(new Date())];
+        var todayKey = fmtDateKey(new Date());
+        if (currentData.timetable[todayKey]) {
+          currentData.prayerTimes = currentData.timetable[todayKey];
         }
       }
     });
@@ -820,6 +822,13 @@ function parseAndPreviewCSV(text) {
 function saveCSVData() {
   if (!parsedCSV) return;
   currentData.timetable = Object.assign(currentData.timetable || {}, parsedCSV);
+
+  // Also update prayerTimes from today's entry if present
+  var todayKey = fmtDateKey(new Date());
+  if (currentData.timetable[todayKey]) {
+    currentData.prayerTimes = currentData.timetable[todayKey];
+  }
+
   var keys = Object.keys(parsedCSV);
   var rows = keys.map(function(dateKey) {
     var e = parsedCSV[dateKey];
@@ -841,16 +850,19 @@ function saveCSVData() {
       isha_jamaah: e.Isha ? e.Isha.jamaah : ''
     };
   });
+
   // Batch upsert in chunks of 100
   var chunkSize = 100;
   var chunks = [];
   for (var i = 0; i < rows.length; i += chunkSize) chunks.push(rows.slice(i, i + chunkSize));
-  var saved = 0;
   showSaveStatus('Saving ' + rows.length + ' days...', false);
+
   function saveChunk(idx) {
     if (idx >= chunks.length) {
       renderYearlyOverview();
-      showSaveStatus(rows.length + ' days saved to Supabase', true);
+      renderTodayTimes();   // refresh Today tab
+      renderMonthTable();   // refresh Monthly tab
+      showSaveStatus(rows.length + ' days saved', true);
       return;
     }
     fetch(SUPABASE_URL + '/rest/v1/prayer_timetables', {
@@ -862,7 +874,13 @@ function saveCSVData() {
         'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
       body: JSON.stringify(chunks[idx])
-    }).then(function() { saveChunk(idx + 1); }).catch(function() { saveChunk(idx + 1); });
+    }).then(function(r) {
+      if (!r.ok) r.text().then(function(t){ console.error('Chunk', idx, 'error:', r.status, t); });
+      saveChunk(idx + 1);
+    }).catch(function(e) {
+      console.error('Chunk', idx, 'failed:', e);
+      saveChunk(idx + 1);
+    });
   }
   saveChunk(0);
 }
