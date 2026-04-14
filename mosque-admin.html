@@ -932,7 +932,11 @@ function renderProfile() {
 }
 
 function saveProfile() {
+  var name = document.getElementById('profile-name').value.trim();
+  var address = document.getElementById('profile-address').value.trim();
   var profile = {
+    name: name,
+    address: address,
     phone: document.getElementById('profile-phone').value.trim(),
     website: document.getElementById('profile-website').value.trim(),
     email: document.getElementById('profile-email').value.trim(),
@@ -942,6 +946,13 @@ function saveProfile() {
   currentData.profile = Object.assign({}, profile, {
     facilities: document.getElementById('profile-facilities').value.trim()
   });
+  // Update local mosque name so header reflects change
+  currentMosque.name = name;
+  currentMosque.address = address;
+  document.getElementById('header-mosque-name').textContent = name;
+  document.getElementById('dash-mosque-title').textContent = name;
+  document.getElementById('dash-mosque-address').textContent = address;
+
   showSaveStatus('Saving...', false);
   sbFetch('mosques?id=eq.' + currentMosque.id, {
     method: 'PATCH',
@@ -953,7 +964,7 @@ function saveProfile() {
     } else {
       return r.text().then(function(t) {
         console.error('Profile save error:', r.status, t);
-        showSaveStatus('Error saving profile (' + r.status + ')', false);
+        showSaveStatus('Error ' + r.status + ': ' + t.slice(0,80), false);
       });
     }
   })
