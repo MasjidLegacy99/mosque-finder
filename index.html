@@ -19,6 +19,10 @@
 .sponsored-card-sub { font-size:11px; color:var(--gold); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sponsored-card-desc { font-size:12px; color:var(--muted); line-height:1.5; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 @media (max-width:420px) { .sponsored-card-body { padding-right:80px; } .sponsored-card-badge { max-width:76px; } }
+
+.banner-slot { margin-bottom:16px; width:100%; }
+.banner-slot a { display:block; border-radius:var(--radius); overflow:hidden; }
+.banner-slot img { width:100%; height:auto; max-height:120px; object-fit:cover; display:block; border-radius:var(--radius); }
 </style>
 <title>Qiblah</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -343,7 +347,8 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(245,240,232,0.94)
     </div>
     <div id="service-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div>
   </div>
-  <div class="mosques-results" id="service-results"></div>
+  <div id="banner-services" class="banner-slot" style="padding:0 32px"></div>
+    <div class="mosques-results" id="service-results"></div>
 </div>
 
 <!-- NOTIFS -->
@@ -360,7 +365,8 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(245,240,232,0.94)
     </div>
     <div id="course-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;margin-bottom:4px"></div>
   </div>
-  <div class="mosques-results" id="online-results"></div>
+  <div id="banner-online" class="banner-slot" style="padding:0 32px"></div>
+    <div class="mosques-results" id="online-results"></div>
 </div>
 
 <!-- MOBILE NAV -->
@@ -1354,6 +1360,7 @@ function resetSliderAuto() {
 }
 
 var COURSES = [];
+var BANNERS = [];
 
 var activeCourseType = 'All';
 
@@ -1586,8 +1593,9 @@ function loadMosquesFromSupabase() {
   var p5 = sbGet('institute_services?select=institute_id,name,type,days,time,is_featured');
   var today = new Date().toISOString().split('T')[0];
   var p6 = sbGet('prayer_timetables?date=eq.' + today + '&select=mosque_id,fajr_jamaah,zuhr_jamaah,asr_jamaah,maghrib_jamaah,isha_jamaah');
+  var p7 = sbGet('banners?active=eq.true&order=sort_order,created_at');
 
-  Promise.all([p1, p2, p3, p4, p5, p6])
+  Promise.all([p1, p2, p3, p4, p5, p6, p7])
     .then(function(results) {
       var mosqueRows   = results[0] || [];
       var svcRows      = results[1] || [];
@@ -1595,6 +1603,13 @@ function loadMosquesFromSupabase() {
       var instRows     = results[3] || [];
       var instSvcRows  = results[4] || [];
       var timesRows    = results[5] || [];
+      var bannerRows   = results[6] || [];
+      var now = new Date();
+      BANNERS = bannerRows.filter(function(b) {
+        if (b.start_date && new Date(b.start_date) > now) return false;
+        if (b.end_date && new Date(b.end_date) < now) return false;
+        return true;
+      });
 
       // Build today's prayer time lookup by mosque_id
       var timesByMosque = {};
@@ -1694,7 +1709,42 @@ function loadMosquesFromSupabase() {
     });
 }
 
+function renderBanners() {
+  function buildBannerHtml(banners) {
+    if (!banners.length) return '';
+    if (banners.length === 1) {
+      var b = banners[0];
+      var inner = '<img src="' + b.image_url + '" alt="' + (b.alt_text||b.title||'') + '" loading="lazy">';
+      return b.link_url ? '<a href="' + b.link_url + '" target="_blank" rel="noopener">' + inner + '</a>' : inner;
+    }
+    // Multiple — use auto-slide
+    var id = 'banner-' + Date.now();
+    var html = '<div class="sponsored-slider"><div class="sponsored-track-wrap"><div class="sponsored-track" id="' + id + '-track">' +
+      banners.map(function(b){
+        var inner = '<img src="' + b.image_url + '" alt="' + (b.alt_text||b.title||'') + '" loading="lazy" style="border-radius:var(--radius)">';
+        return '<div class="sponsored-slide">' + (b.link_url ? '<a href="' + b.link_url + '" target="_blank" rel="noopener">' + inner + '</a>' : inner) + '</div>';
+      }).join('') +
+    '</div></div></div>';
+    setTimeout(function(){ startAutoSlide(id, banners.length); }, 100);
+    return html;
+  }
+
+  var homeBanners     = BANNERS.filter(function(b){ return b.position==='home'     || b.position==='all'; });
+  var svcBanners      = BANNERS.filter(function(b){ return b.position==='services' || b.position==='all'; });
+  var onlineBanners   = BANNERS.filter(function(b){ return b.position==='online'   || b.position==='all'; });
+
+  var homeEl   = document.getElementById('banner-home');
+  var svcEl    = document.getElementById('banner-services');
+  var onlineEl = document.getElementById('banner-online');
+
+  if (homeEl)   homeEl.innerHTML   = buildBannerHtml(homeBanners);
+  if (svcEl)    svcEl.innerHTML    = buildBannerHtml(svcBanners);
+  if (onlineEl) onlineEl.innerHTML = buildBannerHtml(onlineBanners);
+}
+
+
 function initApp() {
+  renderBanners();
   initHomeLocation();
   initAreaFilters();
   initServiceFilters();
