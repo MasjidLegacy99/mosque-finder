@@ -1165,43 +1165,53 @@ function openDetail(idx) {
   var today = todayISO();
   var tomorrow = tomorrowISO();
 
-  function renderWithPrayers(prayers) {
-    renderDetailPage(idx, m, img, prayers);
+  function renderWithPrayers(prayers, liveM) {
+    renderDetailPage(idx, liveM || m, img, prayers);
   }
 
   if (slug) {
-    // Get mosque id then fetch today + tomorrow timetable
-    sbGet('mosques?slug=eq.' + slug + '&select=id')
+    // Fetch mosque profile + prayer times in parallel
+    sbGet('mosques?slug=eq.' + slug + '&select=*,prayer_timetables(date,fajr_begins,fajr_jamaah,zuhr_begins,zuhr_jamaah,asr_begins,asr_jamaah,maghrib_begins,maghrib_jamaah,isha_begins,isha_jamaah)&prayer_timetables.date=in.(' + today + ',' + tomorrow + ')')
       .then(function(rows) {
         if (!rows || !rows.length) { renderWithPrayers(prayers); return; }
-        var mid = rows[0].id;
-        sbGet('prayer_timetables?mosque_id=eq.' + mid + '&date=in.(' + today + ',' + tomorrow + ')&select=*')
-          .then(function(rows) {
-            var todayRow = (rows||[]).find(function(r){ return r.date === today; });
-            var tomRow   = (rows||[]).find(function(r){ return r.date === tomorrow; });
-            if (todayRow) {
-              var nowMins = new Date().getHours()*60 + new Date().getMinutes();
-              prayers = [
-                {name:'Fajr',   begins:fmt12(todayRow.fajr_begins),   jamaah:fmt12(todayRow.fajr_jamaah),   tomorrow:fmt12(tomRow&&tomRow.fajr_jamaah||'')},
-                {name:'Zuhr',   begins:fmt12(todayRow.zuhr_begins),   jamaah:fmt12(todayRow.zuhr_jamaah),   tomorrow:fmt12(tomRow&&tomRow.zuhr_jamaah||'')},
-                {name:'Asr',    begins:fmt12(todayRow.asr_begins),    jamaah:fmt12(todayRow.asr_jamaah),    tomorrow:fmt12(tomRow&&tomRow.asr_jamaah||'')},
-                {name:'Maghrib',begins:fmt12(todayRow.maghrib_begins),jamaah:fmt12(todayRow.maghrib_jamaah),tomorrow:fmt12(tomRow&&tomRow.maghrib_jamaah||'')},
-                {name:'Isha',   begins:fmt12(todayRow.isha_begins),   jamaah:fmt12(todayRow.isha_jamaah),   tomorrow:fmt12(tomRow&&tomRow.isha_jamaah||'')}
-              ];
-              // Mark next prayer
-              var found = false;
-              prayers.forEach(function(p) {
-                if (!found && p.jamaah && p.jamaah !== '--') {
-                  var parts = p.jamaah.replace(' AM','').replace(' PM','').split(':');
-                  var h = parseInt(parts[0]), mn = parseInt(parts[1]||0);
-                  if (p.jamaah.indexOf('PM')>-1 && h!==12) h+=12;
-                  if (p.jamaah.indexOf('AM')>-1 && h===12) h=0;
-                  if (nowMins < h*60+mn) { p.next = true; found = true; }
-                }
-              });
+        var dbM = rows[0];
+
+        // Merge live profile data into m
+        var liveM = Object.assign({}, m, {
+          phone:   dbM.phone   || m.phone   || '',
+          website: dbM.website || m.website || '',
+          email:   dbM.email   || m.email   || '',
+          about:   dbM.about   || m.about   || '',
+          jummah:  dbM.jummah  || m.jummah  || '',
+          _id:     dbM.id
+        });
+
+        // Process prayer times
+        var ttRows = dbM.prayer_timetables || [];
+        var todayRow = ttRows.find(function(r){ return r.date === today; });
+        var tomRow   = ttRows.find(function(r){ return r.date === tomorrow; });
+
+        if (todayRow) {
+          var nowMins = new Date().getHours()*60 + new Date().getMinutes();
+          prayers = [
+            {name:'Fajr',   begins:fmt12(todayRow.fajr_begins),   jamaah:fmt12(todayRow.fajr_jamaah),   tomorrow:fmt12(tomRow&&tomRow.fajr_jamaah||'')},
+            {name:'Zuhr',   begins:fmt12(todayRow.zuhr_begins),   jamaah:fmt12(todayRow.zuhr_jamaah),   tomorrow:fmt12(tomRow&&tomRow.zuhr_jamaah||'')},
+            {name:'Asr',    begins:fmt12(todayRow.asr_begins),    jamaah:fmt12(todayRow.asr_jamaah),    tomorrow:fmt12(tomRow&&tomRow.asr_jamaah||'')},
+            {name:'Maghrib',begins:fmt12(todayRow.maghrib_begins),jamaah:fmt12(todayRow.maghrib_jamaah),tomorrow:fmt12(tomRow&&tomRow.maghrib_jamaah||'')},
+            {name:'Isha',   begins:fmt12(todayRow.isha_begins),   jamaah:fmt12(todayRow.isha_jamaah),   tomorrow:fmt12(tomRow&&tomRow.isha_jamaah||'')}
+          ];
+          var found = false;
+          prayers.forEach(function(p) {
+            if (!found && p.jamaah && p.jamaah !== '--') {
+              var parts = p.jamaah.replace(' AM','').replace(' PM','').split(':');
+              var h = parseInt(parts[0]), mn = parseInt(parts[1]||0);
+              if (p.jamaah.indexOf('PM')>-1 && h!==12) h+=12;
+              if (p.jamaah.indexOf('AM')>-1 && h===12) h=0;
+              if (nowMins < h*60+mn) { p.next = true; found = true; }
             }
-            renderWithPrayers(prayers);
-          }).catch(function(){ renderWithPrayers(prayers); });
+          });
+        }
+        renderWithPrayers(prayers, liveM);
       }).catch(function(){ renderWithPrayers(prayers); });
   } else {
     renderWithPrayers(prayers);
@@ -1292,7 +1302,7 @@ function renderDetailPage(idx, m, img, prayers) {
       '</div>' +
       '<div class="detail-card">' +
         '<h3>About</h3>' +
-        '<p style="font-size:14px;color:var(--muted);line-height:1.7">' + m.name + ' serves the local Muslim community in ' + m.area + ', Tower Hamlets. It provides daily prayer facilities and community services for residents in the area.</p>' +
+        '<p style="font-size:14px;color:var(--muted);line-height:1.7">' + (m.about || (m.name + ' serves the local Muslim community in ' + (m.area||'the area') + ', providing daily prayer facilities and community services.')) + '</p>' +
       '</div>' +
       svcSection +
       '<div class="detail-card">' +
@@ -1301,8 +1311,10 @@ function renderDetailPage(idx, m, img, prayers) {
       '</div>' +
       '<div class="detail-card">' +
         '<h3>Contact</h3>' +
-        '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div><span>Contact via Tower Hamlets Mosques</span></div>' +
-        '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 00-1.38-3.56A8.03 8.03 0 0118.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96z"/></svg></div><a href="' + m.url + '" target="_blank" style="color:var(--muted);font-size:14px">towerhamletsmosques.co.uk</a></div>' +
+        (m.phone ? '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></div><a href="tel:' + m.phone + '" style="color:var(--muted);font-size:14px">' + m.phone + '</a></div>' : '') +
+        (m.website ? '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95a15.65 15.65 0 00-1.38-3.56A8.03 8.03 0 0118.92 8zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96z"/></svg></div><a href="' + m.website + '" target="_blank" style="color:var(--gold);font-size:14px">' + m.website.replace('https://','').replace('http://','') + '</a></div>' : '') +
+        (m.email ? '<div class="contact-item"><div class="con-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div><a href="mailto:' + m.email + '" style="color:var(--muted);font-size:14px">' + m.email + '</a></div>' : '') +
+        (!m.phone && !m.website && !m.email ? '<p style="font-size:13px;color:var(--muted)">No contact details available yet.</p>' : '') +
         '<button class="directions-btn" onclick="window.open(\'https://maps.google.com/?q=' + encodeURIComponent(m.name + ' ' + m.address) + '\',\'_blank\')">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>' +
           'Get Directions' +
@@ -1705,16 +1717,62 @@ function instCardHTML(inst, idx) {
   '</div>';
 }
 
-initHomeLocation();
-initAreaFilters();
-initServiceFilters();
-initSlider();
-renderHomePrayerCard(null);
-renderHomeServices(null);
-renderList(MOSQUES);
-filterServices();
-initCourseFilters();
-filterCourses();
+function loadMosquesFromSupabase() {
+  // Show loading state
+  document.getElementById('home-grid').innerHTML = '<div class="loading-state">Loading mosques...</div>';
+  document.getElementById('mosque-results').innerHTML = '<div class="loading-state">Loading mosques...</div>';
+
+  sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url&order=name')
+    .then(function(rows) {
+      if (!rows || !rows.length) {
+        console.warn('No mosques from Supabase, falling back to hardcoded');
+        initApp();
+        return;
+      }
+      // Replace MOSQUES array with Supabase data
+      MOSQUES = rows.map(function(m) {
+        return {
+          name: m.name || '',
+          address: m.address || '',
+          area: m.area || '',
+          borough: m.borough || '',
+          jummah: m.jummah || '1:30 PM',
+          phone: m.phone || '',
+          website: m.website || '',
+          email: m.email || '',
+          about: m.about || '',
+          url: m.url || '',
+          _id: m.id,
+          _slug: m.slug
+        };
+      });
+      // Rebuild MOSQUE_SLUG_MAP from live data
+      MOSQUES.forEach(function(m) {
+        if (m._slug) MOSQUE_SLUG_MAP[m.name] = m._slug;
+      });
+      console.log('Loaded', MOSQUES.length, 'mosques from Supabase');
+      initApp();
+    })
+    .catch(function(e) {
+      console.warn('Failed to load from Supabase, using hardcoded:', e);
+      initApp();
+    });
+}
+
+function initApp() {
+  initHomeLocation();
+  initAreaFilters();
+  initServiceFilters();
+  initSlider();
+  renderHomePrayerCard(null);
+  renderHomeServices(null);
+  renderList(MOSQUES);
+  filterServices();
+  initCourseFilters();
+  filterCourses();
+}
+
+loadMosquesFromSupabase();
 </script>
 </div>
 </body>
