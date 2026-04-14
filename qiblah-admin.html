@@ -429,9 +429,16 @@ function renderMosques() {
       '<td><span class="badge badge-gold">' + (m.area||'—') + '</span></td>' +
       '<td>' + (m.borough||'—') + '</td>' +
       '<td style="font-size:12px">' + (m.jummah||'—') + '</td>' +
-      '<td><button class="btn btn-ghost btn-sm" onclick="editMosque(\'' + m.id + '\')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteMosque(\'' + m.id + '\',\'' + m.name.replace(/'/g,"") + '\')">Delete</button></td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-action="edit-mosque" data-id="' + m.id + '">Edit</button> <button class="btn btn-danger btn-sm" data-action="delete-mosque" data-id="' + m.id + '">Delete</button></td>' +
     '</tr>';
   }).join('');
+  document.getElementById('mosques-tbody').querySelectorAll('[data-action]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = this.dataset.id;
+      if (this.dataset.action === 'edit-mosque') editMosque(id);
+      else if (this.dataset.action === 'delete-mosque') deleteMosque(id, state.mosques.find(function(m){return m.id===id;}).name);
+    });
+  });
 }
 
 function renderAdmins() {
@@ -445,9 +452,17 @@ function renderAdmins() {
       '<td><strong>' + (m.name||'Unknown') + '</strong></td>' +
       '<td><code style="font-size:12px;color:var(--muted)">' + (m.slug||'—') + '</code></td>' +
       '<td><span class="pin-chip">' + (a.pin_hash||'—') + '</span></td>' +
-      '<td><button class="btn btn-ghost btn-sm" onclick="editPin(\'' + a.id + '\',\'' + (a.pin_hash||'') + '\',\'' + (m.name||'').replace(/'/g,'') + '\')">Change PIN</button></td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-action="edit-pin" data-id="' + a.id + '" data-mid="' + (m?m.id:'') + '">Change PIN</button></td>' +
     '</tr>';
   }).join('');
+  document.getElementById('admins-tbody').querySelectorAll('[data-action]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = this.dataset.id, mid = this.dataset.mid;
+      var admin = state.admins.find(function(a){return a.id===id;});
+      var mosque = state.mosques.find(function(m){return m.id===mid;});
+      if (this.dataset.action === 'edit-pin') editPin(id, admin?admin.pin_hash:'', mosque?mosque.name:'');
+    });
+  });
 }
 
 function renderInstitutes() {
@@ -458,9 +473,16 @@ function renderInstitutes() {
       '<td><span class="badge badge-blue">' + (inst.type||'—') + '</span></td>' +
       '<td>' + (inst.area||'—') + '</td>' +
       '<td>' + (inst.borough||'—') + '</td>' +
-      '<td><button class="btn btn-ghost btn-sm" onclick="editInstitute(\'' + inst.id + '\')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteInstitute(\'' + inst.id + '\')">Delete</button></td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-action="edit-inst" data-id="' + inst.id + '">Edit</button> <button class="btn btn-danger btn-sm" data-action="delete-inst" data-id="' + inst.id + '">Delete</button></td>' +
     '</tr>';
   }).join('');
+  document.getElementById('institutes-tbody').querySelectorAll('[data-action]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = this.dataset.id;
+      if (this.dataset.action === 'edit-inst') editInstitute(id);
+      else if (this.dataset.action === 'delete-inst') deleteInstitute(id);
+    });
+  });
 }
 
 function renderCourses() {
@@ -472,9 +494,16 @@ function renderCourses() {
       '<td><span class="badge badge-gold">' + (c.type||'—') + '</span></td>' +
       '<td><span class="badge ' + (c.price==='Free'?'badge-green':'badge-grey') + '">' + (c.price||'—') + '</span></td>' +
       '<td><span class="badge ' + (c.is_sponsored?'badge-gold':'badge-grey') + '">' + (c.is_sponsored?'Yes':'No') + '</span></td>' +
-      '<td><button class="btn btn-ghost btn-sm" onclick="editCourse(\'' + c.id + '\')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteCourse(\'' + c.id + '\')">Delete</button></td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-action="edit-course" data-id="' + c.id + '">Edit</button> <button class="btn btn-danger btn-sm" data-action="delete-course" data-id="' + c.id + '">Delete</button></td>' +
     '</tr>';
   }).join('');
+  document.getElementById('courses-tbody').querySelectorAll('[data-action]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = this.dataset.id;
+      if (this.dataset.action === 'edit-course') editCourse(id);
+      else if (this.dataset.action === 'delete-course') deleteCourse(id);
+    });
+  });
 }
 
 function renderTimetables() {
