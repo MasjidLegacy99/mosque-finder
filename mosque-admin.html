@@ -385,6 +385,12 @@ body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--t
             <input type="text" id="new-svc-time" placeholder="e.g. 10:00 AM">
           </div>
         </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="new-svc-featured" style="width:15px;height:15px;accent-color:var(--gold)">
+            <span>Featured <span style="font-size:11px;color:var(--muted)">(shows as sponsored slot in app)</span></span>
+          </label>
+        </div>
         <div style="display:flex;gap:8px">
           <button class="btn" style="padding:8px 16px;font-size:13px" onclick="addService()">Add Service</button>
           <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px" onclick="document.getElementById('add-service-form').style.display='none'">Cancel</button>
@@ -1105,7 +1111,8 @@ function addService() {
     name: name,
     type: document.getElementById('new-svc-type').value,
     days: document.getElementById('new-svc-days').value.trim(),
-    time: document.getElementById('new-svc-time').value.trim()
+    time: document.getElementById('new-svc-time').value.trim(),
+    is_featured: document.getElementById('new-svc-featured').checked
   };
   sbFetch('services', { method: 'POST', body: JSON.stringify(svc) })
     .then(function(r){ return r.json(); })
@@ -1121,6 +1128,7 @@ function addService() {
   document.getElementById('new-svc-name').value = '';
   document.getElementById('new-svc-days').value = '';
   document.getElementById('new-svc-time').value = '';
+  document.getElementById('new-svc-featured').checked = false;
 }
 
 function deleteService(i) {
