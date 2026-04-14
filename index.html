@@ -369,14 +369,7 @@ nav { position: sticky; top: 0; z-index: 100; background: rgba(245,240,232,0.94)
 </div>
 
 <script>
-var IMGS = [
-  'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=400&q=60',
-  'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400&q=60',
-  'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=400&q=60',
-  'https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=400&q=60',
-  'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=400&q=60',
-  'https://images.unsplash.com/photo-1548438294-1ad5d5f4f063?w=400&q=60'
-];
+var IMGS = [];
 
 var MOSQUES = [];
 
@@ -464,27 +457,10 @@ function renderServices(results) {
   if (!el) return;
   if (!results.length) { el.innerHTML = '<div class="loading-state">No services found</div>'; return; }
 
-  var SPONSORED_SVC = {
-    name: 'East London Mosque - Weekend Maktab',
-    provider: 'East London Mosque',
-    desc: 'Full-time Islamic education for children ages 5-16. Quran, Arabic and Islamic Studies every Saturday.',
-    mosqueIdx: (function(){ for(var i=0;i<MOSQUES.length;i++){ if(MOSQUES[i].name==='East London Mosque') return i; } return 0; })(),
-    active: true
-  };
+  // Sponsored service - first mosque with a service marked as featured (future: add 'featured' flag)
+  // For now, no hardcoded sponsored slot - remove entirely
+  var sponsoredHtml = '';
 
-  var sponsoredHtml = SPONSORED_SVC.active ? (
-    '<div style="background:rgba(155,127,78,0.06);border:1px solid rgba(155,127,78,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="openDetail(' + SPONSORED_SVC.mosqueIdx + ')">' +
-      '<div style="position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:4px">' +
-        '<svg width="10" height="10" viewBox="0 0 24 24" fill="#9b7f4e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
-        '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.5px">SPONSORED</span>' +
-      '</div>' +
-      '<div style="padding-right:90px">' +
-        '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + SPONSORED_SVC.name + '</div>' +
-        '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + SPONSORED_SVC.provider + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + SPONSORED_SVC.desc + '</div>' +
-      '</div>' +
-    '</div>'
-  ) : '';
 
   el.innerHTML = sponsoredHtml + results.map(function(r) {
     var s = r.service, m = r.mosque, c = svcColor(s.type);
@@ -666,13 +642,7 @@ function filterMosques() {
 }
 
 
-var PRAYER_TIMES = [
-  {name:'Fajr',   jamaah:'05:15'},
-  {name:'Zuhr',   jamaah:'13:30'},
-  {name:'Asr',    jamaah:'18:00'},
-  {name:'Maghrib',jamaah:'20:15'},
-  {name:'Isha',   jamaah:'21:45'}
-];
+var PRAYER_TIMES = [];
 
 function getNextJamaah() {
   var now = new Date();
@@ -924,23 +894,7 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-var MOSQUE_COORDS = {
-  'East London Mosque': [51.5181, -0.0612],
-  'Markazi Masjid': [51.5147, -0.0701],
-  'Brick Lane Jamme Masjid': [51.5205, -0.0714],
-  'Dar al Arqam': [51.5274, -0.0224],
-  'Bow Central Mosque': [51.5272, -0.0228],
-  'Whitechapel Mosque': [51.5181, -0.0602],
-  'Shadwell Jamme Masjid': [51.5121, -0.0587],
-  'Poplar Central Mosque': [51.5088, -0.0178],
-  'Redbridge Islamic Centre': [51.5689, 0.0648],
-  'Gants Hill Masjid': [51.5720, 0.0619],
-  'Forest Gate Central Mosque': [51.5499, 0.0337],
-  'Plashet Grove Mosque': [51.5380, 0.0453],
-  'Masjid Ibrahim': [51.5299, 0.0189],
-  'Seven Kings Masjid': [51.5679, 0.0991],
-  'Ilford Islamic Centre (Albert Road Mosque)': [51.5590, 0.0782]
-};
+var MOSQUE_COORDS = {};
 
 function locateMe() {
   if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
@@ -1017,7 +971,7 @@ var MOSQUE_SLUG_MAP = {};
 function openDetail(idx) {
   var m = MOSQUES[idx] || null;
   if (!m) return;
-  var img = IMGS[idx % IMGS.length];
+  var img = '';
   // Default prayer times (fallback)
   var prayers = [
     {name:'Fajr',   begins:'--', jamaah:'--', tomorrow:'--', next: false},
@@ -1045,14 +999,15 @@ function openDetail(idx) {
         if (!rows || !rows.length) { renderWithPrayers(prayers); return; }
         var dbM = rows[0];
 
-        // Merge live profile data into m
+        // Merge live profile data into m, including live services
         var liveM = Object.assign({}, m, {
-          phone:   dbM.phone   || m.phone   || '',
-          website: dbM.website || m.website || '',
-          email:   dbM.email   || m.email   || '',
-          about:   dbM.about   || m.about   || '',
-          jummah:  dbM.jummah  || m.jummah  || '',
-          _id:     dbM.id
+          phone:    dbM.phone    || m.phone    || '',
+          website:  dbM.website  || m.website  || '',
+          email:    dbM.email    || m.email    || '',
+          about:    dbM.about    || m.about    || '',
+          jummah:   dbM.jummah   || m.jummah   || '',
+          services: m.services   || [],  // already populated from loadMosquesFromSupabase
+          _id:      dbM.id
         });
 
         // Process prayer times
@@ -1304,23 +1259,7 @@ function resetSliderAuto() {
   startSliderAuto();
 }
 
-var COURSES = [
-  { name:'Quran Memorisation', provider:'Bayyinah Institute', type:'Quran', level:'All levels', price:'Free', url:'https://www.bayyinah.tv', desc:'Structured Hifz programme with qualified teachers via live sessions.' },
-  { name:'Arabic for Quran', provider:'Bayyinah Institute', type:'Arabic', level:'Beginner', price:'Paid', url:'https://www.bayyinah.tv', desc:'Learn Arabic grammar to understand the Quran directly.' },
-  { name:'Islamic Studies Foundation', provider:'SeekersGuidance', type:'Aqeedah', level:'Beginner', price:'Free', url:'https://seekersguidance.org', desc:'Comprehensive introduction to Islamic beliefs and practice.' },
-  { name:'Fiqh of Worship', provider:'SeekersGuidance', type:'Fiqh', level:'Intermediate', price:'Free', url:'https://seekersguidance.org', desc:'Detailed study of prayer, fasting, zakat and hajj.' },
-  { name:'Seerah of the Prophet', provider:'Yaqeen Institute', type:'Seerah', level:'All levels', price:'Free', url:'https://yaqeeninstitute.org', desc:'In-depth study of the life of the Prophet Muhammad (SAW).' },
-  { name:'Tajweed Masterclass', provider:'Quranic', type:'Quran', level:'Beginner', price:'Paid', url:'https://www.quranic.com', desc:'Learn to recite the Quran with proper Tajweed rules.' },
-  { name:'Hadith Sciences', provider:'SeekersGuidance', type:'Hadith', level:'Intermediate', price:'Free', url:'https://seekersguidance.org', desc:'Understanding the sciences of Hadith and its application.' },
-  { name:'Modern Arabic', provider:'Al-Maghrib Institute', type:'Arabic', level:'Beginner', price:'Paid', url:'https://almaghrib.org', desc:'Spoken and written modern standard Arabic.' },
-  { name:'Islamic History', provider:'Yaqeen Institute', type:'History', level:'All levels', price:'Free', url:'https://yaqeeninstitute.org', desc:'From the early caliphate to the modern Muslim world.' },
-  { name:'Tafsir of Juz Amma', provider:'Bayyinah Institute', type:'Quran', level:'Beginner', price:'Paid', url:'https://www.bayyinah.tv', desc:'Detailed explanation of the 30th Juz for everyday recitation.' },
-  { name:'Purification of the Soul', provider:'Al-Maghrib Institute', type:'Spirituality', level:'All levels', price:'Paid', url:'https://almaghrib.org', desc:'Tazkiyah and spiritual development in Islam.' },
-  { name:'Fiqh of Minorities', provider:'SeekersGuidance', type:'Fiqh', level:'Advanced', price:'Free', url:'https://seekersguidance.org', desc:'Islamic rulings for Muslims living in non-Muslim countries.' },
-  { name:'Introduction to Aqeedah', provider:'Yaqeen Institute', type:'Aqeedah', level:'Beginner', price:'Free', url:'https://yaqeeninstitute.org', desc:'Core Islamic beliefs explained clearly for the modern age.' },
-  { name:'Quran Recitation for Kids', provider:'Quranic', type:'Quran', level:'Children', price:'Paid', url:'https://www.quranic.com', desc:'Fun and interactive Quran learning for children aged 4+.' },
-  { name:'Islamic Finance Basics', provider:'Al-Maghrib Institute', type:'Fiqh', level:'Beginner', price:'Paid', url:'https://almaghrib.org', desc:'Halal finance, riba, mortgages and Islamic economics.' }
-];
+var COURSES = [];
 
 var activeCourseType = 'All';
 
@@ -1357,6 +1296,7 @@ function filterCourses() {
   var input = document.getElementById('online-search');
   var q = input ? input.value.toLowerCase() : '';
   var filtered = COURSES.filter(function(c) {
+    if (c.sponsored) return false; // shown in sponsored slot
     var typeMatch = activeCourseType === 'All' || c.type === activeCourseType;
     var textMatch = !q || c.name.toLowerCase().indexOf(q) > -1 || c.provider.toLowerCase().indexOf(q) > -1 || c.desc.toLowerCase().indexOf(q) > -1;
     return typeMatch && textMatch;
@@ -1369,25 +1309,18 @@ function renderCourses(courses) {
   if (!el) return;
   if (!courses.length) { el.innerHTML = '<div class="loading-state">No courses found</div>'; return; }
 
-  // Sponsored slot - replace with real sponsor data when sold
-  var SPONSORED = {
-    name: 'The Divine Speech - Tafsir of the Quran',
-    provider: 'Bayyinah Institute',
-    desc: 'Ustadh Nouman Ali Khan\'s flagship course. Deep linguistic and thematic study of the Quran for all levels.',
-    url: 'https://www.bayyinah.tv',
-    active: true
-  };
-
-  var sponsoredHtml = SPONSORED.active ? (
-    '<div style="background:rgba(155,127,78,0.06);border:1px solid rgba(155,127,78,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="window.open(\'' + SPONSORED.url + '\',\'_blank\')">' +
+  // Sponsored course - pulled from Supabase (is_sponsored = true)
+  var sponsoredCourse = COURSES.find(function(c){ return c.sponsored; });
+  var sponsoredHtml = sponsoredCourse ? (
+    '<div style="background:rgba(155,127,78,0.06);border:1px solid rgba(155,127,78,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;position:relative;cursor:pointer" onclick="window.open(\'' + sponsoredCourse.url + '\',\'_blank\')">' +
       '<div style="position:absolute;top:10px;right:12px;display:flex;align-items:center;gap:4px">' +
         '<svg width="10" height="10" viewBox="0 0 24 24" fill="#9b7f4e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' +
         '<span style="font-size:10px;font-weight:600;color:var(--gold);letter-spacing:0.5px">SPONSORED</span>' +
       '</div>' +
       '<div style="padding-right:90px">' +
-        '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + SPONSORED.name + '</div>' +
-        '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + SPONSORED.provider + '</div>' +
-        '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + SPONSORED.desc + '</div>' +
+        '<div style="font-size:14px;font-weight:600;margin-bottom:3px">' + sponsoredCourse.name + '</div>' +
+        '<div style="font-size:11px;color:var(--gold);margin-bottom:5px">' + sponsoredCourse.provider + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);line-height:1.5">' + sponsoredCourse.desc + '</div>' +
       '</div>' +
     '</div>'
   ) : '';
@@ -1410,78 +1343,7 @@ function renderCourses(courses) {
   }).join('') + '</div>';
 }
 
-var INSTITUTES = [
-  {
-    name: 'London Islamic School',
-    address: '14 Damien St, Whitechapel, London E1 2HX',
-    area: 'Whitechapel',
-    phone: '020 7247 0096',
-    website: 'https://londonislamicschool.co.uk',
-    type: 'School',
-    about: 'A full-time Islamic school providing high-quality education rooted in Islamic values for pupils aged 5-16.',
-    services: [
-      { name: 'Full-time Islamic School', type: 'Education', days: 'Mon-Fri', time: '8:30 AM' },
-      { name: 'Quran Hifz Programme', type: 'Education', days: 'Daily', time: '' },
-      { name: 'After-school Maktab', type: 'Education', days: 'Mon-Fri', time: '4:00 PM' }
-    ]
-  },
-  {
-    name: 'East London Madrasa',
-    address: '60 Bigland St, Whitechapel, London E1 2ND',
-    area: 'Whitechapel',
-    phone: '020 7702 0022',
-    website: '',
-    type: 'Madrasa',
-    about: 'Traditional Islamic education for children and adults including Quran recitation, Arabic and Islamic studies.',
-    services: [
-      { name: 'Quran Classes', type: 'Education', days: 'Mon-Fri', time: '5:00 PM' },
-      { name: 'Arabic Language', type: 'Education', days: 'Sat-Sun', time: '10:00 AM' },
-      { name: 'Adult Islamic Studies', type: 'Education', days: 'Sat', time: '2:00 PM' }
-    ]
-  },
-  {
-    name: 'Stepney Islamic Centre',
-    address: '95 Stepney Green, London E1 3JX',
-    area: 'Stepney',
-    phone: '',
-    website: '',
-    type: 'Community Centre',
-    about: 'A community hub offering Islamic education, youth programmes and welfare services for the local Muslim community.',
-    services: [
-      { name: 'Youth Quran Club', type: 'Youth', days: 'Sat', time: '10:00 AM' },
-      { name: 'Sisters Arabic Circle', type: 'Education', days: 'Sun', time: '11:00 AM' },
-      { name: 'Food Bank', type: 'Welfare', days: 'Fri', time: '12:00 PM' }
-    ]
-  },
-  {
-    name: 'Ilford Islamic Centre',
-    address: '14 Coventry Rd, Ilford IG1 4QR',
-    area: 'Ilford',
-    phone: '020 8478 0123',
-    website: '',
-    type: 'Islamic Centre',
-    about: 'Serving the Redbridge Muslim community with education, welfare and community programmes.',
-    services: [
-      { name: 'Weekend Maktab', type: 'Education', days: 'Sat-Sun', time: '9:00 AM' },
-      { name: 'Hifz Programme', type: 'Education', days: 'Mon-Fri', time: '4:30 PM' },
-      { name: 'Youth Sports', type: 'Youth', days: 'Sun', time: '2:00 PM' }
-    ]
-  },
-  {
-    name: 'Forest Gate Islamic Academy',
-    address: '83 Romford Rd, Forest Gate, London E7 9HA',
-    area: 'Forest Gate',
-    phone: '',
-    website: '',
-    type: 'Academy',
-    about: 'Specialist Islamic academy focusing on Quran memorisation and classical Islamic sciences.',
-    services: [
-      { name: 'Quran Memorisation', type: 'Education', days: 'Mon-Fri', time: '4:00 PM' },
-      { name: 'Islamic Sciences', type: 'Education', days: 'Sat', time: '9:00 AM' },
-      { name: 'Sisters Halaqah', type: 'Community', days: 'Sun', time: '3:00 PM' }
-    ]
-  }
-];
+var INSTITUTES = [];
 
 var activeInstType = 'All';
 
@@ -1587,41 +1449,97 @@ function instCardHTML(inst, idx) {
 }
 
 function loadMosquesFromSupabase() {
-  // Show loading state
   document.getElementById('home-grid').innerHTML = '<div class="loading-state">Loading mosques...</div>';
   document.getElementById('mosque-results').innerHTML = '<div class="loading-state">Loading mosques...</div>';
 
-  sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url,lat,lon&order=name')
-    .then(function(rows) {
-      if (!rows || !rows.length) {
-        console.warn('No mosques from Supabase');
-        initApp();
-        return;
-      }
-      // Replace MOSQUES array with Supabase data
-      MOSQUES = rows.map(function(m) {
+  var p1 = sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url,lat,lon&order=name');
+  var p2 = sbGet('services?select=mosque_id,name,type,days,time');
+  var p3 = sbGet('courses?select=*&order=name&active=eq.true');
+  var p4 = sbGet('institutes?select=id,name,address,area,borough,phone,website,type,about&order=name');
+  var p5 = sbGet('institute_services?select=institute_id,name,type,days,time');
+
+  Promise.all([p1, p2, p3, p4, p5])
+    .then(function(results) {
+      var mosqueRows   = results[0] || [];
+      var svcRows      = results[1] || [];
+      var courseRows   = results[2] || [];
+      var instRows     = results[3] || [];
+      var instSvcRows  = results[4] || [];
+
+      if (!mosqueRows.length) { console.warn('No mosques from Supabase'); initApp(); return; }
+
+      // Build service lookup by mosque_id
+      var svcByMosque = {};
+      svcRows.forEach(function(s) {
+        if (!svcByMosque[s.mosque_id]) svcByMosque[s.mosque_id] = [];
+        svcByMosque[s.mosque_id].push({ name: s.name, type: s.type||'Community', days: s.days||'', time: s.time||'' });
+      });
+
+      // Build institute_services lookup
+      var svcByInst = {};
+      instSvcRows.forEach(function(s) {
+        if (!svcByInst[s.institute_id]) svcByInst[s.institute_id] = [];
+        svcByInst[s.institute_id].push({ name: s.name, type: s.type||'Education', days: s.days||'', time: s.time||'' });
+      });
+
+      // Populate MOSQUES
+      MOSQUES = mosqueRows.map(function(m) {
         return {
-          name: m.name || '',
-          address: m.address || '',
-          area: m.area || '',
-          borough: m.borough || '',
-          jummah: m.jummah || '1:30 PM',
-          phone: m.phone || '',
-          website: m.website || '',
-          email: m.email || '',
-          about: m.about || '',
-          url: m.url || '',
+          name:     m.name    || '',
+          address:  m.address || '',
+          area:     m.area    || '',
+          borough:  m.borough || '',
+          jummah:   m.jummah  || '1:30 PM',
+          phone:    m.phone   || '',
+          website:  m.website || '',
+          email:    m.email   || '',
+          about:    m.about   || '',
+          url:      m.url     || '',
           lat: m.lat || null,
           lon: m.lon || null,
-          _id: m.id,
+          services: svcByMosque[m.id] || [],
+          _id:   m.id,
           _slug: m.slug
         };
       });
-      // Rebuild MOSQUE_SLUG_MAP from live data
+
       MOSQUES.forEach(function(m) {
         if (m._slug) MOSQUE_SLUG_MAP[m.name] = m._slug;
       });
-      console.log('Loaded', MOSQUES.length, 'mosques from Supabase');
+
+      // Populate COURSES
+      COURSES = courseRows.map(function(c) {
+        return {
+          name:     c.name        || '',
+          provider: c.provider    || '',
+          type:     c.type        || 'Quran',
+          level:    c.level       || '',
+          price:    c.price       || 'Free',
+          url:      c.url         || '',
+          desc:     c.description || '',
+          sponsored: c.is_sponsored || false
+        };
+      });
+
+      // Populate INSTITUTES
+      INSTITUTES = instRows.map(function(i) {
+        return {
+          name:     i.name    || '',
+          address:  i.address || '',
+          area:     i.area    || '',
+          borough:  i.borough || '',
+          phone:    i.phone   || '',
+          website:  i.website || '',
+          type:     i.type    || 'Islamic Centre',
+          about:    i.about   || '',
+          services: svcByInst[i.id] || [],
+          _id:      i.id
+        };
+      });
+
+
+
+      console.log('Loaded', MOSQUES.length, 'mosques,', COURSES.length, 'courses,', INSTITUTES.length, 'institutes');
       initApp();
     })
     .catch(function(e) {
