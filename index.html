@@ -376,137 +376,7 @@ var IMGS = [
   'https://images.unsplash.com/photo-1548438294-1ad5d5f4f063?w=400&q=60'
 ];
 
-var MOSQUES = [
-  {name:'Baitul Aman Mosque',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/baitulaman/'},
-  {name:'Baitul Mamur Masjid',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/baitulmamur/'},
-  {name:'Bishops Way Mosque',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/bishopsway/'},
-  {name:'Burhan Uddin Mosque',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/burhanuddinmasjid/'},
-  {name:'Dorset Masjid',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/dorsetmasjid/'},
-  {name:'Globe Town Mosque',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/globetownmasjid/',services:[{name:'Quran Classes',type:'Education',days:'Sat & Sun',time:'10:00 AM'},{name:'Youth Club',type:'Youth',days:'Fri',time:'6:00 PM'}]},
-  {name:'Shahporan Masjid',address:'Bethnal Green, London',area:'Bethnal Green',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/shahporanmasjid/'},
-  {name:'Bow Central Mosque',address:'Bow, London E3',area:'Bow',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.towerhamletsmosques.co.uk/bowcentralmosque/',services:[{name:'Sisters Quran Circle',type:'Education',days:'Mon & Wed',time:'10:00 AM'},{name:'Islamic Studies',type:'Education',days:'Sat',time:'9:00 AM'},{name:'Food Bank',type:'Welfare',days:'Tue',time:'12:00 PM'}]},
-  {name:'Bow Common Masjid',address:'Bow Common, London E3',area:'Bow',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/bowcommonmasjid/'},
-  {name:'Bow Muslim Community Centre',address:'Bow, London E3',area:'Bow',jummah:'1:30 PM',tags:['Community Centre'],url:'https://www.towerhamletsmosques.co.uk/bmcc/',services:[{name:'Youth Club',type:'Youth',days:'Fri',time:'5:00 PM'},{name:'Elderly Welfare',type:'Welfare',days:'Thu',time:'2:00 PM'}]},
-  {name:'Bow West Organisation',address:'Bow, London E3',area:'Bow',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/bwo/'},
-  {name:'British Estate Masjid',address:'Bow, London E3',area:'Bow',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/britishestatemasjid/'},
-  {name:'Bromley By Bow Masjid',address:'Bromley by Bow, London E3',area:'Bow',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/bbbmasjid/'},
-  {name:'Coventry Cross Mosque',address:'Bow, London E3',area:'Bow',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/coventrycrossmasjid/'},
-  {name:'Dar al Arqam',address:'1 Kitcat Terrace, Bow, London E3 2SA',area:'Bow',jummah:'1:00 PM, 2:15 PM',tags:['Parking','Wudu Area'],url:'https://www.towerhamletsmosques.co.uk/daralarqam/',services:[{name:'Quran Hifz Programme',type:'Education',days:'Daily',time:'4:30 PM'},{name:'Arabic Classes',type:'Education',days:'Sat & Sun',time:'10:00 AM'},{name:'Youth Club',type:'Youth',days:'Fri',time:'6:00 PM'},{name:'Food Parcels',type:'Welfare',days:'Wed',time:'11:00 AM'}]},
-  {name:'Mimbar Academy',address:'Bow, London E3',area:'Bow',jummah:'1:30 PM',tags:['Academy'],url:'https://www.towerhamletsmosques.co.uk/mimbar/',services:[{name:'Islamic Studies',type:'Education',days:'Mon-Fri',time:'4:00 PM'},{name:'Quran Classes',type:'Education',days:'Sat & Sun',time:'9:00 AM'}]},
-  {name:'Al Aqsa Masjid',address:'Docklands, London E14',area:'Docklands',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/alaqsa/'},
-  {name:'Docklands Community Masjid',address:'Docklands, London E14',area:'Docklands',jummah:'1:30 PM',tags:['Community'],url:'https://www.towerhamletsmosques.co.uk/dco/',services:[{name:'Youth Club',type:'Youth',days:'Fri',time:'5:30 PM'},{name:'Community Meals',type:'Welfare',days:'Sun',time:'1:00 PM'}]},
-  {name:'Madina Jamme Masjid',address:'Docklands, London E14',area:'Docklands',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/madinamasjid/'},
-  {name:'Westferry Community Masjid',address:'Westferry, London E14',area:'Docklands',jummah:'1:30 PM',tags:['Community'],url:'https://www.towerhamletsmosques.co.uk/wco/'},
-  {name:'Baitul Islah Academy',address:'Limehouse, London E14',area:'Limehouse',jummah:'1:30 PM',tags:['Academy'],url:'https://www.towerhamletsmosques.co.uk/baitulislah/',services:[{name:'Quran Classes',type:'Education',days:'Mon-Fri',time:'4:30 PM'},{name:'Islamic Studies',type:'Education',days:'Sat',time:'9:00 AM'},{name:'Arabic Language',type:'Education',days:'Sun',time:'10:00 AM'}]},
-  {name:'Eastside Centre Masjid',address:'Limehouse, London E14',area:'Limehouse',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/eastside/'},
-  {name:'Limehouse Masjid',address:'Limehouse, London E14',area:'Limehouse',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/limehousemasjid/'},
-  {name:'Locksley Estate Mosque',address:'Limehouse, London E14',area:'Limehouse',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/locksleymasjid/'},
-  {name:'Turners Road Masjid',address:'Limehouse, London E14',area:'Limehouse',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/turnersmasjid/'},
-  {name:'Hamlets Way Masjid',address:'Mile End, London E3',area:'Mile End',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/hamletswaymasjid/'},
-  {name:'Mazahirul Uloom London',address:'Mile End, London E3',area:'Mile End',jummah:'1:30 PM',tags:['Islamic School'],url:'https://www.towerhamletsmosques.co.uk/mazahirululoom/',services:[{name:'Full-time Islamic School',type:'Education',days:'Mon-Fri',time:'8:30 AM'},{name:'Hifz Programme',type:'Education',days:'Mon-Fri',time:'4:00 PM'}]},
-  {name:'Aberfeldy Masjid',address:'Aberfeldy Street, Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/aberfeldymasjid/'},
-  {name:'Burdett Estate Mosque',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/bbcamasjid/'},
-  {name:'Hifzul Quran',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/hifzulquran/',services:[{name:'Hifz Programme',type:'Education',days:'Daily',time:'4:00 PM'},{name:'Quran Recitation',type:'Education',days:'Sat & Sun',time:'10:00 AM'}]},
-  {name:'Hindgrove Masjid',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/hindgrovemasjid/'},
-  {name:'Lansbury Estate Masjid',address:'Lansbury Estate, Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/lansburymasjid/'},
-  {name:'Leopold Masjid',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/leopold/'},
-  {name:'Poplar Central Mosque',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/poplarcentralmasjid/',services:[{name:'Youth Club',type:'Youth',days:'Fri',time:'5:00 PM'},{name:'Quran Classes',type:'Education',days:'Sat & Sun',time:'10:00 AM'},{name:'Counselling',type:'Welfare',days:'Thu',time:'2:00 PM'}]},
-  {name:'Poplar Mosque and Community Centre',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',tags:['Sisters Section','Community'],url:'https://www.towerhamletsmosques.co.uk/pmcc/',services:[{name:'Sisters Halaqah',type:'Education',days:'Mon',time:'10:00 AM'},{name:'Youth Club',type:'Youth',days:'Sat',time:'2:00 PM'},{name:'Food Bank',type:'Welfare',days:'Wed',time:'11:00 AM'}]},
-  {name:'Poplar Shahjalal Masjid',address:'Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/poplarshahjalal/'},
-  {name:'Teviot Masjid',address:'Teviot Estate, Poplar, London E14',area:'Poplar',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/teviotmasjid/'},
-  {name:'Al Barakah Institute',address:'Shadwell, London E1',area:'Shadwell',jummah:'1:30 PM',tags:['Institute'],url:'https://www.towerhamletsmosques.co.uk/albarakah/',services:[{name:'Islamic Studies',type:'Education',days:'Mon-Fri',time:'4:00 PM'},{name:'Arabic Classes',type:'Education',days:'Sat',time:'9:00 AM'}]},
-  {name:'Ashaadibi Masjid',address:'Shadwell, London E1',area:'Shadwell',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/ashaadibi/'},
-  {name:'Darul Ummah Jamme Masjid',address:'Shadwell, London E1',area:'Shadwell',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.towerhamletsmosques.co.uk/darulummah/',services:[{name:'Sisters Classes',type:'Education',days:'Tue & Thu',time:'10:00 AM'},{name:'Nikah Services',type:'Community',days:'By appointment',time:''},{name:'Funeral Services',type:'Community',days:'As needed',time:''}]},
-  {name:'Shadwell Gardens Masjid',address:'Shadwell Gardens, London E1',area:'Shadwell',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/shadwellgardensmasjid/'},
-  {name:'Shadwell Jamme Masjid',address:'Shadwell, London E1',area:'Shadwell',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/shadwellmasjid/'},
-  {name:'BBC Masjid',address:'Shoreditch, London E2',area:'Shoreditch',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/bbcmasjid/'},
-  {name:'Brick Lane Jamme Masjid',address:'Brick Lane, London E1 6RF',area:'Shoreditch',jummah:'1:00 PM, 2:00 PM',tags:['Sisters Section','Historic'],url:'https://www.towerhamletsmosques.co.uk/bricklanemasjid/',services:[{name:'Quran Classes',type:'Education',days:'Sat & Sun',time:'9:00 AM'},{name:'Youth Club',type:'Youth',days:'Fri',time:'5:30 PM'},{name:'Food Bank',type:'Welfare',days:'Mon',time:'12:00 PM'}]},
-  {name:'Shoreditch Masjid',address:'Shoreditch, London E2',area:'Shoreditch',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/shoreditchmasjid/'},
-  {name:'Al Huda Mosque',address:'Stepney, London E1',area:'Stepney',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/alhudamosque/'},
-  {name:'Darul Khidmah',address:'Stepney, London E1',area:'Stepney',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/darulkhidmah/',services:[{name:'Quran Classes',type:'Education',days:'Mon-Fri',time:'4:30 PM'},{name:'Welfare Support',type:'Welfare',days:'Wed',time:'10:00 AM'}]},
-  {name:'Redcoat Masjid',address:'Stepney, London E1',area:'Stepney',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/redcoatmasjid/'},
-  {name:'Stepney Shahjalal Mosque',address:'Stepney, London E1',area:'Stepney',jummah:'1:30 PM',tags:['Community Centre'],url:'https://www.towerhamletsmosques.co.uk/ssmacc/',services:[{name:'Youth Club',type:'Youth',days:'Fri & Sat',time:'5:00 PM'},{name:'Quran Classes',type:'Education',days:'Daily',time:'4:30 PM'},{name:'Counselling',type:'Welfare',days:'Tue',time:'2:00 PM'},{name:'Nikah Services',type:'Community',days:'By appointment',time:''}]},
-  {name:'Wapping Masjid',address:'Wapping, London E1W',area:'Wapping',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/wappingmasjid/'},
-  {name:'Collingwood Masjid',address:'Whitechapel, London E1',area:'Whitechapel',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/collingwoodmasjid/'},
-  {name:'East London Mosque',address:'82-92 Whitechapel Road, London E1 1JQ',area:'Whitechapel',jummah:'1:00 PM, 1:45 PM, 2:30 PM',tags:['Sisters Section','Disabled Access','Parking'],url:'https://www.towerhamletsmosques.co.uk/elm/',services:[{name:'Quran Classes',type:'Education',days:'Daily',time:'4:30 PM'},{name:'Youth Club',type:'Youth',days:'Fri',time:'5:00 PM'},{name:'Sisters Circle',type:'Education',days:'Mon & Wed',time:'10:00 AM'},{name:'Food Bank',type:'Welfare',days:'Sat',time:'10:00 AM'},{name:'Funeral Services',type:'Community',days:'Daily',time:''},{name:'Nikah Services',type:'Community',days:'By appointment',time:''},{name:'Arabic Classes',type:'Education',days:'Sat & Sun',time:'9:00 AM'}]},
-  {name:'Esha Atul Islam Mosque',address:'Whitechapel, London E1',area:'Whitechapel',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/eshaatulislam/'},
-  {name:'Jazari Community Centre',address:'Whitechapel, London E1',area:'Whitechapel',jummah:'1:30 PM',tags:['Community Centre'],url:'https://www.towerhamletsmosques.co.uk/jazari/',services:[{name:'Community Meals',type:'Welfare',days:'Sun',time:'1:00 PM'},{name:'Youth Programme',type:'Youth',days:'Sat',time:'2:00 PM'}]},
-  {name:'Markazi Masjid',address:'Christian Street, London E1 1RS',area:'Whitechapel',jummah:'1:15 PM',tags:['Sisters Section'],url:'https://www.towerhamletsmosques.co.uk/markazimasjid/',services:[{name:'Quran Classes',type:'Education',days:'Sat & Sun',time:'9:00 AM'},{name:'Sisters Halaqah',type:'Education',days:'Wed',time:'10:00 AM'}]},
-  {name:'Weavers Fields Masjid',address:'Whitechapel, London E2',area:'Whitechapel',jummah:'1:30 PM',url:'https://www.towerhamletsmosques.co.uk/weaversmasjid/'},
-  // Newham - Forest Gate
-  {name:'Forest Gate Central Mosque',address:'449-451 Romford Road, Forest Gate, London E7',area:'Forest Gate',jummah:'1:15 PM, 2:00 PM',tags:['Sisters Section'],url:'https://www.newhammosques.com/forest-gate-central'},
-  {name:'Green Street Masjid',address:'88 Green Street, Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Upton Lane Mosque',address:'62-66 Upton Lane, Forest Gate, London E7',area:'Forest Gate',jummah:'1:00 PM, 1:45 PM',tags:['Sisters Section','Disabled Access'],url:'https://www.newhammosques.com/'},
-  {name:'Minhaj ul Quran',address:'292-296 Romford Road, Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Jamia Darus Sunnah',address:'Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Khatme Nubuwat',address:'Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'International Khatme Nubuwat',address:'Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Madaniyah Foundation',address:'Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Masjid e Quba',address:'Forest Gate, London E7',area:'Forest Gate',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  // Newham - East Ham
-  {name:'Plashet Grove Mosque',address:'177-179 Plashet Grove, East Ham, London E6',area:'East Ham',jummah:'1:15 PM, 2:00 PM',tags:['Disabled Access'],url:'https://www.newhammosques.com/'},
-  {name:'Masjid Al Humera',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',tags:['Disabled Access'],url:'https://www.newhammosques.com/'},
-  {name:'Masjid Isa Ibn Maryam',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.newhammosques.com/'},
-  {name:'Al Karam Mosque',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Azhar Masjid',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Masjid Bilal and Islamic Centre',address:'295 Barking Road, East Ham, London E6',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Madina Masjid',address:'225 High Street North, East Ham, London E6',area:'East Ham',jummah:'1:15 PM, 2:00 PM',url:'https://www.newhammosques.com/'},
-  {name:'Asha Islamic Centre',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Baitur Rahman',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Darus Salaam',address:'East Ham, London E6',area:'East Ham',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.newhammosques.com/'},
-  {name:'Islamic Dawah Centre (IDC) Saifi Foundation',address:'398 High Street North, East Ham, London E12',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Shah Jalal Mosque',address:'722-724 Romford Road, Manor Park, London E12',area:'East Ham',jummah:'1:15 PM, 2:00 PM',url:'https://www.newhammosques.com/'},
-  {name:'Anjuman-e-Islamia Mosque',address:'266-268 High Street North, Manor Park, London E12',area:'East Ham',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  // Newham - Plaistow / Upton Park
-  {name:'Masjid Ibrahim',address:'721-723 Barking Road, Plaistow, London E13',area:'Plaistow',jummah:'1:15 PM, 2:00 PM',tags:['Sisters Section','Disabled Access'],url:'https://www.newhammosques.com/'},
-  {name:'Masjid Yousaf',address:'Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.newhammosques.com/'},
-  {name:'Plaistow Jamia Islamia',address:'Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Plashet Road Mosque',address:'Plashet Road, Upton Park, London E13',area:'Plaistow',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Selwyn Mosque',address:'Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Umm al Qura Community Centre',address:'Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.newhammosques.com/'},
-  {name:'Church Road Mosque',address:'Church Road, Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'MIA Centre and Masjid',address:'Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  // Newham - Stratford / West Ham
-  {name:'Hefazothe Islam Centre',address:'Stratford, London E15',area:'Stratford',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Iqra Academy',address:'Stratford, London E15',area:'Stratford',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Masjid Al Falah',address:'Stratford, London E15',area:'Stratford',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Royal Docks Welfare Assc. Darul Jannah',address:'243 Plaistow Road, London E15',area:'Stratford',jummah:'1:30 PM',url:'https://www.newhammosques.com/royal-docks'},
-  {name:'Mohi Ud Deen Jamia',address:'Stratford, London E15',area:'Stratford',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  {name:'Al Hira Masjid',address:'Stratford, London E15',area:'Stratford',jummah:'1:30 PM',tags:['Sisters Section','Disabled Access'],url:'https://www.newhammosques.com/'},
-  {name:'Newham Hospital Prayer Room',address:'Glen Road, Plaistow, London E13',area:'Plaistow',jummah:'1:30 PM',tags:['Sisters Section'],url:'https://www.newhammosques.com/'},
-  {name:'Zakariya Primary School',address:'Stratford, London E15',area:'Stratford',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  // Newham - Canning Town / Royal Docks
-  {name:'Al Karam Masjid',address:'Canning Town, London E16',area:'Canning Town',jummah:'1:30 PM',url:'https://www.newhammosques.com/'},
-  // Redbridge - Ilford
-  {name:'Redbridge Islamic Centre',address:'179 Eastern Avenue, Ilford, IG4 5AW',area:'Ilford',jummah:'1:00 PM, 2:00 PM, 3:00 PM',tags:['Sisters Section','Parking'],url:'https://redbridgemosques.com/'},
-  {name:'Gants Hill Masjid',address:'28-28A Woodford Avenue, Gants Hill, Ilford, IG2 6XG',area:'Ilford',jummah:'1:15 PM, 2:15 PM',tags:['Sisters Section'],url:'https://redbridgemosques.com/'},
-  {name:'Ilford Islamic Centre (Albert Road Mosque)',address:'Albert Road, Ilford, IG1',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Ilford Muslim Society (Masjid-e-Dawatul Islam)',address:'Ilford, IG1',area:'Ilford',jummah:'1:15 PM, 2:00 PM',url:'https://redbridgemosques.com/'},
-  {name:'Ilford Muslim Community Centre',address:'Eton Road, Ilford, IG1 2UE',area:'Ilford',jummah:'1:30 PM',tags:['Community Centre'],url:'https://redbridgemosques.com/'},
-  {name:'At-Taqwa Academy',address:'104-106 Ley Street, Ilford, IG1 4BX',area:'Ilford',jummah:'1:30 PM',tags:['Academy'],url:'https://redbridgemosques.com/'},
-  {name:'Loxford Muslim Society',address:'Ilford, IG1',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Darul Ummah Redbridge',address:'Ilford, IG1',area:'Ilford',jummah:'1:15 PM, 2:00 PM',url:'https://redbridgemosques.com/'},
-  {name:'Masjid Taha',address:'Ilford, IG1',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Masjid Al Falah Redbridge',address:'Ilford, IG1',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Islamic Centre of Essex',address:'878-880 Eastern Avenue, Ilford, IG2 7HY',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Redbridge Muslim Community Centre',address:'Ilford, IG2',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'IRDSA Hall',address:'Craven Gardens, Barkingside, Ilford, IG6 1PS',area:'Ilford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  // Redbridge - Seven Kings / Goodmayes
-  {name:'Seven Kings Muslim Educational Trust',address:'Seven Kings, Ilford, IG3',area:'Seven Kings',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Seven Kings Masjid',address:'Seven Kings, Ilford, IG3',area:'Seven Kings',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Goodmayes Masjid',address:'Goodmayes, Ilford, IG3',area:'Seven Kings',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  // Redbridge - Newbury Park / Wanstead
-  {name:'Newbury Park Mosque',address:'Newbury Park, Ilford, IG2',area:'Newbury Park',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'South Woodford Islamic Centre',address:'10-12 Mulberry Way, South Woodford, London E18 1ED',area:'Newbury Park',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'South Woodford Muslim Community Centre',address:'12-14 Mulberry Way, South Woodford, London E18 1ED',area:'Newbury Park',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  // Redbridge - Woodford
-  {name:'Woodford Muslim Cultural Centre',address:'114 Snakes Lane East, Woodford Green, IG8 7HY',area:'Woodford',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  // Redbridge - Chadwell Heath / Barkingside
-  {name:'Al Huda Chadwell Heath',address:'Chadwell Heath, Romford, RM6',area:'Chadwell Heath',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Chadwell Heath Central Masjid',address:'Chadwell Heath, Romford, RM6',area:'Chadwell Heath',jummah:'1:30 PM',url:'https://redbridgemosques.com/'},
-  {name:'Barkingside Community Trust',address:'Barkingside, Ilford, IG6',area:'Chadwell Heath',jummah:'1:30 PM',url:'https://redbridgemosques.com/'}
-
-];
+var MOSQUES = [];
 
 var SVC_COLORS = {
   'Education': {bg:'rgba(99,102,241,0.15)',color:'#818cf8'},
@@ -1139,13 +1009,7 @@ function fmt12(t) {
   return h12+':'+m+' '+ap;
 }
 
-var MOSQUE_SLUG_MAP = {
-  "East London Mosque": "east-london-mosque",
-  "Dar al Arqam": "dar-al-arqam",
-  "Markazi Masjid": "markazi-masjid",
-  "Bow Central Mosque": "bow-central",
-  "Redbridge Islamic Centre": "redbridge-islamic-centre"
-};
+var MOSQUE_SLUG_MAP = {};
 
 function openDetail(idx) {
   var m = MOSQUES[idx] || null;
@@ -1727,7 +1591,7 @@ function loadMosquesFromSupabase() {
   sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url,lat,lon&order=name')
     .then(function(rows) {
       if (!rows || !rows.length) {
-        console.warn('No mosques from Supabase, falling back to hardcoded');
+        console.warn('No mosques from Supabase');
         initApp();
         return;
       }
@@ -1758,7 +1622,7 @@ function loadMosquesFromSupabase() {
       initApp();
     })
     .catch(function(e) {
-      console.warn('Failed to load from Supabase, using hardcoded:', e);
+      console.warn('Failed to load from Supabase:', e);
       initApp();
     });
 }
