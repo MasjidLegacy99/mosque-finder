@@ -432,14 +432,24 @@ var SUPABASE_URL = 'https://bfevwoykvnogmgxdkxdj.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.8I--P9h_jYsSlvkthF76O1m0mcFkgI8mcRmKVgXOHAk';
 
 function sbFetch(path, opts) {
-  return fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    }
-  }, opts || {}));
+  var defaultHeaders = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+  };
+  var method = (opts && opts.method) || 'GET';
+  if (method === 'GET') {
+    defaultHeaders['Prefer'] = 'return=representation';
+  } else if (method === 'POST') {
+    defaultHeaders['Prefer'] = 'return=representation';
+  } else if (method === 'PATCH') {
+    defaultHeaders['Prefer'] = 'return=minimal';
+  } else if (method === 'DELETE') {
+    defaultHeaders['Prefer'] = 'return=minimal';
+  }
+  var mergedOpts = Object.assign({}, opts || {});
+  mergedOpts.headers = Object.assign({}, defaultHeaders, (opts && opts.headers) || {});
+  return fetch(SUPABASE_URL + '/rest/v1/' + path, mergedOpts);
 }
 
 var PRAYER_NAMES = ['Fajr', 'Zuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -454,25 +464,25 @@ function doLogin() {
   errEl.style.display = 'none';
   if (!id || !pin) { showError('Please enter your Mosque ID and PIN.'); return; }
   showError('Checking...');
-  // Fetch mosque by slug
-  sbFetch('mosques?slug=eq.' + encodeURIComponent(id) + '&select=*')
+  // Single query: get mosque + pin together
+  sbFetch('mosques?slug=eq.' + encodeURIComponent(id) + '&select=id,name,address,area,slug,mosque_admins(pin_hash)')
     .then(function(r){ return r.json(); })
-    .then(function(mosques) {
-      if (!mosques || !mosques.length) { showError('Mosque ID not found. Contact admin@qiblah.app'); return; }
-      var mosque = mosques[0];
-      // Check PIN against mosque_admins
-      sbFetch('mosque_admins?mosque_id=eq.' + mosque.id + '&select=pin_hash')
-        .then(function(r){ return r.json(); })
-        .then(function(admins) {
-          if (!admins || !admins.length || admins[0].pin_hash !== pin) {
-            showError('Incorrect PIN. Contact admin@qiblah.app for access.');
-            return;
-          }
-          currentMosque = { id: mosque.id, slug: mosque.slug, name: mosque.name, address: mosque.address, area: mosque.area };
-          loadDashboard();
-        });
+    .then(function(rows) {
+      if (!rows || !rows.length) {
+        showError('Mosque ID not found. Contact admin@qiblah.app for access.');
+        return;
+      }
+      var mosque = rows[0];
+      var admins = mosque.mosque_admins || [];
+      var match = admins.some(function(a){ return a.pin_hash === pin; });
+      if (!match) {
+        showError('Incorrect PIN. Contact admin@qiblah.app for access.');
+        return;
+      }
+      currentMosque = { id: mosque.id, slug: mosque.slug, name: mosque.name, address: mosque.address, area: mosque.area };
+      loadDashboard();
     })
-    .catch(function() { showError('Connection error. Please try again.'); });
+    .catch(function(e) { showError('Connection error. Please try again.'); });
 }
 
 function showError(msg) {
@@ -572,18 +582,20 @@ function getDefaultData() {
 }
 
 function saveData() {
-  // Save profile to mosques table
+  var payload = {
+    phone: currentData.profile ? currentData.profile.phone || '' : '',
+    website: currentData.profile ? currentData.profile.website || '' : '',
+    email: currentData.profile ? currentData.profile.email || '' : '',
+    about: currentData.profile ? currentData.profile.about || '' : '',
+    jummah: typeof currentData.jummah === 'string' ? currentData.jummah : (currentData.jummah && currentData.jummah.times ? currentData.jummah.times : ''),
+    updated_at: new Date().toISOString()
+  };
   sbFetch('mosques?id=eq.' + currentMosque.id, {
     method: 'PATCH',
-    body: JSON.stringify({
-      phone: currentData.profile.phone,
-      website: currentData.profile.website,
-      email: currentData.profile.email,
-      about: currentData.profile.about,
-      jummah: typeof currentData.jummah === 'string' ? currentData.jummah : (currentData.jummah && currentData.jummah.times ? currentData.jummah.times : ''),
-      updated_at: new Date().toISOString()
-    })
-  }).catch(function(){});
+    body: JSON.stringify(payload)
+  }).then(function(r) {
+    if (!r.ok) r.text().then(function(t){ console.error('saveData error:', r.status, t); });
+  }).catch(function(e){ console.error('saveData failed:', e); });
 }
 
 function saveTimetableToSupabase(dateKey, entry) {
@@ -902,15 +914,35 @@ function renderProfile() {
 }
 
 function saveProfile() {
-  currentData.profile = {
+  var profile = {
     phone: document.getElementById('profile-phone').value.trim(),
     website: document.getElementById('profile-website').value.trim(),
     email: document.getElementById('profile-email').value.trim(),
     about: document.getElementById('profile-about').value.trim(),
-    facilities: document.getElementById('profile-facilities').value.trim()
+    updated_at: new Date().toISOString()
   };
-  saveData();
-  showSaveStatus('Profile saved', true);
+  currentData.profile = Object.assign({}, profile, {
+    facilities: document.getElementById('profile-facilities').value.trim()
+  });
+  showSaveStatus('Saving...', false);
+  sbFetch('mosques?id=eq.' + currentMosque.id, {
+    method: 'PATCH',
+    body: JSON.stringify(profile)
+  })
+  .then(function(r) {
+    if (r.ok) {
+      showSaveStatus('Profile saved', true);
+    } else {
+      return r.text().then(function(t) {
+        console.error('Profile save error:', r.status, t);
+        showSaveStatus('Error saving profile (' + r.status + ')', false);
+      });
+    }
+  })
+  .catch(function(e) {
+    console.error('Profile save failed:', e);
+    showSaveStatus('Connection error', false);
+  });
 }
 
 function renderServices() {
