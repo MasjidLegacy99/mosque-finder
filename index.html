@@ -1161,7 +1161,7 @@ function openDetail(idx) {
   ];
 
   // Try to fetch from Supabase
-  var slug = MOSQUE_SLUG_MAP[m.name];
+  var slug = m._slug || MOSQUE_SLUG_MAP[m.name];
   var today = todayISO();
   var tomorrow = tomorrowISO();
 
@@ -1169,9 +1169,11 @@ function openDetail(idx) {
     renderDetailPage(idx, liveM || m, img, prayers);
   }
 
-  if (slug) {
-    // Fetch mosque profile + prayer times in parallel
-    sbGet('mosques?slug=eq.' + slug + '&select=*,prayer_timetables(date,fajr_begins,fajr_jamaah,zuhr_begins,zuhr_jamaah,asr_begins,asr_jamaah,maghrib_begins,maghrib_jamaah,isha_begins,isha_jamaah)&prayer_timetables.date=in.(' + today + ',' + tomorrow + ')')
+  if (slug || m._id) {
+    var fetchUrl = m._id
+      ? 'mosques?id=eq.' + m._id + '&select=*,prayer_timetables(date,fajr_begins,fajr_jamaah,zuhr_begins,zuhr_jamaah,asr_begins,asr_jamaah,maghrib_begins,maghrib_jamaah,isha_begins,isha_jamaah)&prayer_timetables.date=in.(' + today + ',' + tomorrow + ')'
+      : 'mosques?slug=eq.' + slug + '&select=*,prayer_timetables(date,fajr_begins,fajr_jamaah,zuhr_begins,zuhr_jamaah,asr_begins,asr_jamaah,maghrib_begins,maghrib_jamaah,isha_begins,isha_jamaah)&prayer_timetables.date=in.(' + today + ',' + tomorrow + ')';
+    sbGet(fetchUrl)
       .then(function(rows) {
         if (!rows || !rows.length) { renderWithPrayers(prayers); return; }
         var dbM = rows[0];
@@ -1722,7 +1724,7 @@ function loadMosquesFromSupabase() {
   document.getElementById('home-grid').innerHTML = '<div class="loading-state">Loading mosques...</div>';
   document.getElementById('mosque-results').innerHTML = '<div class="loading-state">Loading mosques...</div>';
 
-  sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url&order=name')
+  sbGet('mosques?select=id,slug,name,address,area,borough,jummah,phone,website,email,about,url,lat,lon&order=name')
     .then(function(rows) {
       if (!rows || !rows.length) {
         console.warn('No mosques from Supabase, falling back to hardcoded');
@@ -1742,6 +1744,8 @@ function loadMosquesFromSupabase() {
           email: m.email || '',
           about: m.about || '',
           url: m.url || '',
+          lat: m.lat || null,
+          lon: m.lon || null,
           _id: m.id,
           _slug: m.slug
         };
