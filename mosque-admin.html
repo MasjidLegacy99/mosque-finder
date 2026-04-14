@@ -516,19 +516,20 @@ function loadDashboard() {
 function loadFromSupabase() {
   currentData = getDefaultData();
   var mid = currentMosque.id;
-  var today = new Date().toISOString().split('T')[0];
-  // Load profile
-  sbFetch('mosques?id=eq.' + mid + '&select=*')
+
+  var p1 = sbFetch('mosques?id=eq.' + mid + '&select=*')
     .then(function(r){ return r.json(); })
     .then(function(rows) {
       if (rows && rows[0]) {
         var m = rows[0];
         currentData.profile = { phone: m.phone||'', website: m.website||'', email: m.email||'', about: m.about||'', facilities: (m.tags||[]).join(', ') };
+        currentMosque.name = m.name || currentMosque.name;
+        currentMosque.address = m.address || currentMosque.address;
         if (m.jummah) currentData.jummah = { times: m.jummah, lang: 'English', notes: '' };
       }
     });
-  // Load timetable
-  sbFetch('prayer_timetables?mosque_id=eq.' + mid + '&select=*&order=date')
+
+  var p2 = sbFetch('prayer_timetables?mosque_id=eq.' + mid + '&select=*&order=date')
     .then(function(r){ return r.json(); })
     .then(function(rows) {
       if (rows) {
@@ -550,20 +551,30 @@ function loadFromSupabase() {
         }
       }
     });
-  // Load services
-  sbFetch('services?mosque_id=eq.' + mid + '&select=*')
+
+  var p3 = sbFetch('services?mosque_id=eq.' + mid + '&select=*')
     .then(function(r){ return r.json(); })
     .then(function(rows) {
       if (rows) currentData.services = rows.map(function(s){ return {name:s.name,type:s.type||'Community',days:s.days||'',time:s.time||'',_id:s.id}; });
     });
-  // Load announcements
-  sbFetch('announcements?mosque_id=eq.' + mid + '&select=*&order=created_at.desc')
+
+  var p4 = sbFetch('announcements?mosque_id=eq.' + mid + '&select=*&order=created_at.desc')
     .then(function(r){ return r.json(); })
     .then(function(rows) {
       if (rows) currentData.announcements = rows.map(function(a){ return {title:a.title,desc:a.description||'',date:a.date||'',category:a.category||'General',_id:a.id}; });
     });
-  // Render after short delay to let fetches complete
-  setTimeout(renderAll, 600);
+
+  Promise.all([p1, p2, p3, p4])
+    .then(function() {
+      renderAll();
+      document.getElementById('header-mosque-name').textContent = currentMosque.name;
+      document.getElementById('dash-mosque-title').textContent = currentMosque.name;
+      document.getElementById('dash-mosque-address').textContent = currentMosque.address;
+    })
+    .catch(function(e) {
+      console.error('Load error:', e);
+      renderAll(); // render with whatever loaded
+    });
 }
 
 function formatDateKey(d) {
@@ -798,25 +809,107 @@ function handleCSVUpload(event) {
   reader.readAsText(file);
 }
 
+function to24h(t, isPM) {
+  if (!t || !t.trim()) return '';
+  var parts = t.trim().split(':');
+  var h = parseInt(parts[0]);
+  var m = parts[1] ? parts[1].trim().padStart(2,'0') : '00';
+  if (isPM && h < 12) h += 12;
+  return h + ':' + m;
+}
+
+// Zuhr begins: PM only if h <= 1 (1:xx BST = 13:xx). 11:xx/12:xx stay as-is.
+function to24hZuhr(t) {
+  if (!t || !t.trim()) return '';
+  var parts = t.trim().split(':');
+  var h = parseInt(parts[0]);
+  var m = parts[1] ? parts[1].trim().padStart(2,'0') : '00';
+  if (h <= 1) h += 12; // 1:xx -> 13:xx (BST), 0:xx -> 12:xx (edge case)
+  return h + ':' + m;
+}
+
 function parseAndPreviewCSV(text) {
-  document.getElementById('csv-error').style.display='none';
-  var lines=text.trim().split('\n').map(function(l){return l.trim();});
-  if(lines.length<2){showCSVError('CSV appears empty.');return;}
-  parsedCSV={};
-  for(var i=1;i<lines.length;i++){
-    if(!lines[i]) continue;
-    var c=lines[i].split(',').map(function(x){return x.trim();});
-    if(!c[0]) continue;
-    parsedCSV[c[0]]={Fajr:{begins:c[1]||'',jamaah:c[2]||''},Sunrise:{begins:c[3]||'',jamaah:''},Zuhr:{begins:c[4]||'',jamaah:c[5]||''},Asr:{begins:c[6]||'',jamaah:c[7]||''},Maghrib:{begins:c[8]||'',jamaah:c[9]||''},Isha:{begins:c[10]||'',jamaah:c[11]||''}};
+  document.getElementById('csv-error').style.display = 'none';
+  var lines = text.trim().split('\n').map(function(l){ return l.trim().replace(/\r/g,''); });
+  if (lines.length < 2) { showCSVError('CSV appears empty.'); return; }
+
+  var headers = lines[0].toLowerCase().split(',').map(function(h){ return h.trim(); });
+  var isMosqueAPI = headers[0] === 'month' && headers[1] === 'day_of_month';
+  var isLegacy = headers[0] === 'date';
+
+  if (!isMosqueAPI && !isLegacy) {
+    showCSVError('Unrecognised CSV format. Expected columns: month,day_of_month,... or date,...');
+    return;
   }
-  var count=Object.keys(parsedCSV).length;
-  document.getElementById('csv-preview-label').textContent=count+' days parsed';
-  var rows=Object.keys(parsedCSV).slice(0,10).map(function(date){
-    var e=parsedCSV[date];
-    return '<tr><td class="csv-cell" style="font-weight:600">'+date+'</td><td class="csv-cell">'+e.Fajr.begins+'</td><td class="csv-cell">'+e.Fajr.jamaah+'</td><td class="csv-cell">'+e.Sunrise.begins+'</td><td class="csv-cell">'+e.Zuhr.begins+'</td><td class="csv-cell">'+e.Zuhr.jamaah+'</td><td class="csv-cell">'+e.Asr.begins+'</td><td class="csv-cell">'+e.Asr.jamaah+'</td><td class="csv-cell">'+e.Maghrib.begins+'</td><td class="csv-cell">'+e.Maghrib.jamaah+'</td><td class="csv-cell">'+e.Isha.begins+'</td><td class="csv-cell">'+e.Isha.jamaah+'</td></tr>';
+
+  parsedCSV = {};
+  var year = new Date().getFullYear();
+
+  for (var i = 1; i < lines.length; i++) {
+    if (!lines[i]) continue;
+    var c = lines[i].split(',').map(function(x){ return x.trim(); });
+
+    if (isMosqueAPI) {
+      // month, day, fajr_start, fajr_cong, sunrise, zuhr_start, zuhr_cong,
+      // asr_first, asr_second, asr_cong, maghrib_start, maghrib_cong, isha_start, isha_cong
+      var month = parseInt(c[0]);
+      var day   = parseInt(c[1]);
+      if (isNaN(month) || isNaN(day)) continue;
+      var dateKey = pad(day) + '/' + pad(month) + '/' + year;
+      parsedCSV[dateKey] = {
+        Fajr:    { begins: to24h(c[2],  false), jamaah: to24h(c[3],  false) },
+        Sunrise: { begins: to24h(c[4],  false), jamaah: '' },
+        Zuhr:    { begins: to24hZuhr(c[5]), jamaah: to24h(c[6],  true)  },
+        Asr:     { begins: to24h(c[8],  true),  jamaah: to24h(c[9],  true)  },
+        Maghrib: { begins: to24h(c[10], true),  jamaah: to24h(c[11], true)  },
+        Isha:    { begins: to24h(c[12], true),  jamaah: to24h(c[13], true)  }
+      };
+    } else {
+      // Legacy format: date (DD/MM/YYYY), fajr_b, fajr_j, sunrise, zuhr_b, zuhr_j, asr_b, asr_j, magh_b, magh_j, isha_b, isha_j
+      if (!c[0]) continue;
+      parsedCSV[c[0]] = {
+        Fajr:    { begins: to24h(c[1],  false), jamaah: to24h(c[2],  false) },
+        Sunrise: { begins: to24h(c[3],  false), jamaah: '' },
+        Zuhr:    { begins: to24h(c[4],  false), jamaah: to24h(c[5],  true)  },
+        Asr:     { begins: to24h(c[6],  true),  jamaah: to24h(c[7],  true)  },
+        Maghrib: { begins: to24h(c[8],  true),  jamaah: to24h(c[9],  true)  },
+        Isha:    { begins: to24h(c[10], true),  jamaah: to24h(c[11], true)  }
+      };
+    }
+  }
+
+  var count = Object.keys(parsedCSV).length;
+  document.getElementById('csv-preview-label').textContent = count + ' days parsed (' + (isMosqueAPI ? 'MosqueAPI format' : 'Standard format') + ')';
+
+  // Show preview of first 10 rows
+  var previewRows = Object.keys(parsedCSV).slice(0, 10).map(function(date) {
+    var e = parsedCSV[date];
+    return '<tr>' +
+      '<td class="csv-cell" style="font-weight:600">' + date + '</td>' +
+      '<td class="csv-cell">' + e.Fajr.begins + '</td>' +
+      '<td class="csv-cell">' + e.Fajr.jamaah + '</td>' +
+      '<td class="csv-cell">' + e.Sunrise.begins + '</td>' +
+      '<td class="csv-cell">' + e.Zuhr.begins + '</td>' +
+      '<td class="csv-cell">' + e.Zuhr.jamaah + '</td>' +
+      '<td class="csv-cell">' + e.Asr.begins + '</td>' +
+      '<td class="csv-cell">' + e.Asr.jamaah + '</td>' +
+      '<td class="csv-cell">' + e.Maghrib.begins + '</td>' +
+      '<td class="csv-cell">' + e.Maghrib.jamaah + '</td>' +
+      '<td class="csv-cell">' + e.Isha.begins + '</td>' +
+      '<td class="csv-cell">' + e.Isha.jamaah + '</td>' +
+    '</tr>';
   }).join('');
-  document.getElementById('csv-preview-table').innerHTML='<tr><th class="csv-head">Date</th><th class="csv-head">Fajr B</th><th class="csv-head">Fajr J</th><th class="csv-head">Sunrise</th><th class="csv-head">Zuhr B</th><th class="csv-head">Zuhr J</th><th class="csv-head">Asr B</th><th class="csv-head">Asr J</th><th class="csv-head">Maghr B</th><th class="csv-head">Maghr J</th><th class="csv-head">Isha B</th><th class="csv-head">Isha J</th></tr>'+rows+(count>10?'<tr><td colspan="12" class="csv-cell" style="color:var(--muted);text-align:center">...and '+(count-10)+' more rows</td></tr>':'');
-  document.getElementById('csv-preview').style.display='block';
+
+  document.getElementById('csv-preview-table').innerHTML =
+    '<tr><th class="csv-head">Date</th><th class="csv-head">Fajr B</th><th class="csv-head">Fajr J</th>' +
+    '<th class="csv-head">Sunrise</th><th class="csv-head">Zuhr B</th><th class="csv-head">Zuhr J</th>' +
+    '<th class="csv-head">Asr B</th><th class="csv-head">Asr J</th>' +
+    '<th class="csv-head">Maghr B</th><th class="csv-head">Maghr J</th>' +
+    '<th class="csv-head">Isha B</th><th class="csv-head">Isha J</th></tr>' +
+    previewRows +
+    (count > 10 ? '<tr><td colspan="12" class="csv-cell" style="color:var(--muted);text-align:center">...and ' + (count - 10) + ' more rows</td></tr>' : '');
+
+  document.getElementById('csv-preview').style.display = 'block';
 }
 
 function saveCSVData() {
