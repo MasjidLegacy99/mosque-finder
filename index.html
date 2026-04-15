@@ -1752,9 +1752,7 @@ function loadMosquesFromSupabase() {
       });
 
       // Populate MOSQUES
-      MOSQUES = mosqueRows.filter(function(m) {
-        return !!timesByMosque[m.id];
-      }).map(function(m) {
+      MOSQUES = mosqueRows.map(function(m) {
         return {
           name:     m.name    || '',
           address:  m.address || '',
