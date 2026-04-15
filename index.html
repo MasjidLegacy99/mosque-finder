@@ -1148,7 +1148,7 @@ var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 function sbGet(path) {
   return fetch(SB_URL + '/rest/v1/' + path, {
     headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){ return r.json(); }).then(function(d){ return Array.isArray(d) ? d : []; });
 }
 
 function todayISO() {
