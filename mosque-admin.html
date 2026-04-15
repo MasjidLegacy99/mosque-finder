@@ -489,8 +489,8 @@ body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--t
 </div>
 
 <script>
-var SUPABASE_URL = 'https://vllvmbsgconmctgwfjzl.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.wwVerQNtOP97uwES6Pq66KD3rULyGOTHiKdnuUw7MgI';
+var SUPABASE_URL = 'https://bfevwoykvnogmgxdkxdj.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.8I--P9h_jYsSlvkthF76O1m0mcFkgI8mcRmKVgXOHAk';
 
 function sbFetch(path, opts) {
   var defaultHeaders = {
@@ -1256,8 +1256,8 @@ function initEmbedTab() {
   if (!currentMosque) return;
   var slug = currentMosque.slug;
   var name = currentMosque.name;
-  var SB  = 'https://vllvmbsgconmctgwfjzl.supabase.co';
-  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.wwVerQNtOP97uwES6Pq66KD3rULyGOTHiKdnuUw7MgI';
+  var SB  = 'https://bfevwoykvnogmgxdkxdj.supabase.co';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.8I--P9h_jYsSlvkthF76O1m0mcFkgI8mcRmKVgXOHAk';
 
   // Set preview name
   var epName = document.getElementById('ep-name');
@@ -1267,7 +1267,7 @@ function initEmbedTab() {
 
   // Generate embed code
   var slug_val = slug || 'your-mosque-slug';
-  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.wwVerQNtOP97uwES6Pq66KD3rULyGOTHiKdnuUw7MgI';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJmZXZ3b3lrdm5vZ21neGRreGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDgwNjEsImV4cCI6MjA5MTcyNDA2MX0.8I--P9h_jYsSlvkthF76O1m0mcFkgI8mcRmKVgXOHAk';
 
   // Build Squarespace-compatible embed code
   var codeLines = [
@@ -1276,7 +1276,7 @@ function initEmbedTab() {
     '<script>',
     '(function() {',
     '  var MOSQUE_SLUG = "' + slug_val + '";',
-    '  var SB  = "https://vllvmbsgconmctgwfjzl.supabase.co";',
+    '  var SB  = "https://bfevwoykvnogmgxdkxdj.supabase.co";',
     '  var KEY = "' + SB_KEY + '";',
     '  var root = document.getElementById("qiblah-pt-widget");',
     '  if (!root) return;',
