@@ -1,4 +1,4 @@
-# Masajid
+# Qiblah
 
 A mosque finder and community app for Tower Hamlets, Newham and Redbridge.
 
