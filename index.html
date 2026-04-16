@@ -1144,8 +1144,8 @@ function locateMe() {
 }
 
 var SB_URL = 'https://vllvmbsgconmctgwfjzl.supabase.co';
-var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsbHZtYnNnY29ubWN0Z3dmanpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjQ0NjUsImV4cCI6MjA5MTg0MDQ2NX0.wwVerQNtOP97uwES6Pq66KD3rULyGOTHiKdnuUw7MgI';
-  
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsbHZtYnNnY29ubWN0Z3dmanpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwNzg0MDAsImV4cCI6MjA2MDY1NDQwMH0.N5p7vKgG-hVJYqNdKQHT_-qQO5Fz5LbVqXJ8K9tZyKo';
+
 function sbGet(path) {
   return fetch(SB_URL + '/rest/v1/' + path, {
     headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
